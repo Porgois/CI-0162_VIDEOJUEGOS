@@ -1,2 +1,2 @@
-# CI-1062_VIDEOJUEGOS
+# CI-0162_VIDEOJUEGOS
 Repositorio para el curso de desarrollo de videojuegos.
