@@ -13,6 +13,7 @@
 #include "../assetManager/assetManager.hpp"
 #include "../eventManager/eventManager.hpp"
 #include "../controllerManager/controllerManager.hpp"
+#include "../sceneManager/sceneLoader.hpp"
 
 const int FRAMES_PER_SECOND = 60;
 const int MILLISECS_PER_FRAME = 1000 / FRAMES_PER_SECOND;
@@ -42,6 +43,8 @@ class Game {
         std::unique_ptr<EventManager> event_manager;
         std::unique_ptr<Registry> registry;
         sol::state lua;
+
+        std::unique_ptr<SceneLoader> scene_loader;
 
     public:
         static Game& getInstance();

@@ -9,7 +9,7 @@
 #include "../components/rigidBodyComponent.hpp"
 #include "../components/flashlightComponent.hpp"
 #include "../components/circleColliderComponent.hpp"
-#include "../components/rectangleColliderComponent.hpp"
+#include "../components/boxColliderComponent.hpp"
 #include "../components/colliderComponent.hpp"
 
 // Systems
@@ -31,6 +31,7 @@ Game::Game() {
     asset_manager = std::make_unique<AssetManager>();
     event_manager = std::make_unique<EventManager>();
     controller_manager = std::make_unique<ControllerManager>();
+    scene_loader = std::make_unique<SceneLoader>();
 }
 
 // Destructor
@@ -113,59 +114,62 @@ void Game::setup() {
     // Bind
     registry->getSystem<ScriptSystem>().createLuaBinding(lua);
 
-    // Add textures
-    asset_manager->addTexture(renderer, "crosshair", "./assets/ui/cursors/cursor.png");
-    asset_manager->addTexture(renderer, "player", \
-        "./assets/sprites/characters/player/player_sprite_sheet.png");
-    asset_manager->addTexture(renderer, "barrel", "./assets/sprites/environment/barrel_sprite.png");
-    asset_manager->addTexture(renderer, "flashlight-cone", "./assets/sprites/masks/cone.png");
-    asset_manager->addTexture(renderer, "flashlight-source", "./assets/sprites/masks/circle.png");
+    scene_loader->loadScene("./assets/scripts/scenes/scene_01.lua", lua, \
+        asset_manager, controller_manager, registry, renderer);
 
-    // Add inputs
-    controller_manager->addActionKey("move_up", 119); // SDLK_w
-    controller_manager->addActionKey("move_left", 97); // SDLK_a
-    controller_manager->addActionKey("move_down", 115); // SDLK_s
-    controller_manager->addActionKey("move_right", 100); // SDLK_d
+    // // Add textures
+    // asset_manager->addTexture(renderer, "crosshair", "./assets/ui/cursors/cursor.png");
+    // asset_manager->addTexture(renderer, "player", \
+    //     "./assets/sprites/characters/player/player_sprite_sheet.png");
+    // asset_manager->addTexture(renderer, "barrel", "./assets/sprites/environment/barrel_sprite.png");
+    // asset_manager->addTexture(renderer, "flashlight-cone", "./assets/sprites/masks/cone.png");
+    // asset_manager->addTexture(renderer, "flashlight-source", "./assets/sprites/masks/circle.png");
+
+    // // Add inputs
+    // controller_manager->addActionKey("move_up", 119); // SDLK_w
+    // controller_manager->addActionKey("move_left", 97); // SDLK_a
+    // controller_manager->addActionKey("move_down", 115); // SDLK_s
+    // controller_manager->addActionKey("move_right", 100); // SDLK_d
     
-    // Lua script
-    lua.script_file("./assets/scripts/player.lua");
-    sol::function update = lua["update"];
+    // // Lua script
+    // lua.script_file("./assets/scripts/player.lua");
+    // sol::function update = lua["update"];
 
-    // Cursor entity
-    Entity cursor = registry->createEntity("cursor");
+    // // Cursor entity
+    // Entity cursor = registry->createEntity("cursor");
     
-    cursor.addComponent<SpriteComponent>("crosshair", 4, 4, 0, 0);
-    cursor.addComponent<CursorComponent>();
+    // cursor.addComponent<SpriteComponent>("crosshair", 4, 4, 0, 0);
+    // cursor.addComponent<CursorComponent>();
     
-    // Player
-    Entity player = registry->createEntity("player");
-    std::cout << "Player name: " << player.getName() << std::endl;
+    // // Player
+    // Entity player = registry->createEntity("player");
+    // std::cout << "Player name: " << player.getName() << std::endl;
 
-    player.addComponent<ScriptComponent>(update);
-    player.addComponent<TransformComponent> (glm::vec2(325.0, 215.0), glm::vec2(3.0, 3.0), 0.0);
-    player.addComponent<SpriteComponent>("player", 30, 30, 0, 0, true);
-    player.addComponent<AnimationComponent>();
-    player.addComponent<RigidBodyComponent>(glm::vec2(0.0, 0.0));
-    player.addComponent<FlashlightComponent>("flashlight-cone", "flashlight-source", 520, 275);
-    player.addComponent<ColliderComponent>();
-    player.addComponent<CircleColliderComponent>(5, 30, 30);
+    // player.addComponent<ScriptComponent>(update);
+    // player.addComponent<TransformComponent> (glm::vec2(325.0, 215.0), glm::vec2(3.0, 3.0), 0.0);
+    // player.addComponent<SpriteComponent>("player", 30, 30, 0, 0, true);
+    // player.addComponent<AnimationComponent>();
+    // player.addComponent<RigidBodyComponent>(glm::vec2(0.0, 0.0));
+    // player.addComponent<FlashlightComponent>("flashlight-cone", "flashlight-source", 520, 275);
+    // player.addComponent<ColliderComponent>();
+    // player.addComponent<CircleColliderComponent>(5, 30, 30);
 
-    // Animations
-    auto& anim = player.getComponent<AnimationComponent>();
-    anim.clips["idle"] = {0, 4, 8, true};
-    anim.clips["walk"] = {1, 6, 13, true};
+    // // Animations
+    // auto& anim = player.getComponent<AnimationComponent>();
+    // anim.clips["idle"] = {0, 4, 8, true};
+    // anim.clips["walk"] = {1, 6, 13, true};
 
-    // Barrel
-    Entity barrel = registry->createEntity("barrel");
-    barrel.addComponent<TransformComponent> (glm::vec2(30, 80), glm::vec2(5.0, 5.0), 0.0);
-    barrel.addComponent<SpriteComponent>("barrel", 13, 16, 0, 0, false);
-    barrel.addComponent<ColliderComponent>();
+    // // Barrel
+    // Entity barrel = registry->createEntity("barrel");
+    // barrel.addComponent<TransformComponent> (glm::vec2(30, 80), glm::vec2(5.0, 5.0), 0.0);
+    // barrel.addComponent<SpriteComponent>("barrel", 13, 16, 0, 0, false);
+    // barrel.addComponent<ColliderComponent>();
     
-    //(sprite base formula)
-    //offset.x = (sprite_width  - collider_width)  / 2   ← center horizontally
-    //offset.y =  sprite_height - collider_height         ← push to bottom
+    // //(sprite base formula)
+    // //offset.x = (sprite_width  - collider_width)  / 2   ← center horizontally
+    // //offset.y =  sprite_height - collider_height         ← push to bottom
 
-    barrel.addComponent<RectangleColliderComponent>(12, 8, glm::vec2(0.5, 7.0));
+    // barrel.addComponent<BoxColliderComponent>(12, 8, glm::vec2(0.5, 7.0));
 }
 
 // Processes all kinds of input

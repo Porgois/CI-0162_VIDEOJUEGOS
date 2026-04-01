@@ -1,16 +1,16 @@
-#ifndef RECTANGLE_COLLIDER_COMPONENT_HPP
-#define RECTANGLE_COLLIDER_COMPONENT_HPP
+#ifndef BOX_COLLIDER_COMPONENT_HPP
+#define BOX_COLLIDER_COMPONENT_HPP
 
 #include <glm/glm.hpp>
 
 #include "../components/transformComponent.hpp"
 
-struct RectangleColliderComponent {
+struct BoxColliderComponent {
     int width;
     int height;
     glm::vec2 offset; // optional collider shift relative to transform position
 
-    RectangleColliderComponent( int width = 0, int height = 0, glm::vec2 offset = glm::vec2(0.0, 0.0)) {
+    BoxColliderComponent(int width = 0, int height = 0, glm::vec2 offset = glm::vec2(0.0, 0.0)) {
         this->width = width;
         this->height = height;
         this->offset = offset;
@@ -27,4 +27,4 @@ struct RectangleColliderComponent {
     }
 };
 
-#endif // RECTANGLE_COLLIDER_COMPONENT_HPP
+#endif // BOX_COLLIDER_COMPONENT_HPP

@@ -7,7 +7,7 @@
 #include "../eventManager/eventManager.hpp"
 #include "../components/transformComponent.hpp"
 #include "../components/circleColliderComponent.hpp"
-#include "../components/rectangleColliderComponent.hpp"
+#include "../components/boxColliderComponent.hpp"
 #include "../components/colliderComponent.hpp"
 #include "../events/collisionEvent.hpp"
 
@@ -94,10 +94,10 @@ class CollisionSystem : public System {
         }
 
         // --- Rect vs Rect ---
-        void resolveRectRect(Entity a, Entity b) {
-            auto& a_collider  = a.getComponent<RectangleColliderComponent>();
+        void resolveBoxRect(Entity a, Entity b) {
+            auto& a_collider  = a.getComponent<BoxColliderComponent>();
             auto& a_transform = a.getComponent<TransformComponent>();
-            auto& b_collider  = b.getComponent<RectangleColliderComponent>();
+            auto& b_collider  = b.getComponent<BoxColliderComponent>();
             auto& b_transform = b.getComponent<TransformComponent>();
 
             glm::vec2 a_min = a_collider.getMin(a_transform);
@@ -126,7 +126,7 @@ class CollisionSystem : public System {
         void resolveCircleRect(Entity circle_entity, Entity rect_entity) {
             auto& c_collider  = circle_entity.getComponent<CircleColliderComponent>();
             auto& c_transform = circle_entity.getComponent<TransformComponent>();
-            auto& r_collider  = rect_entity.getComponent<RectangleColliderComponent>();
+            auto& r_collider  = rect_entity.getComponent<BoxColliderComponent>();
             auto& r_transform = rect_entity.getComponent<TransformComponent>();
 
             glm::vec2 center = c_collider.getCenter(c_transform);
@@ -175,8 +175,8 @@ class CollisionSystem : public System {
 
                     bool a_circle = a.hasComponent<CircleColliderComponent>();
                     bool b_circle = b.hasComponent<CircleColliderComponent>();
-                    bool a_rect   = a.hasComponent<RectangleColliderComponent>();
-                    bool b_rect   = b.hasComponent<RectangleColliderComponent>();
+                    bool a_rect   = a.hasComponent<BoxColliderComponent>();
+                    bool b_rect   = b.hasComponent<BoxColliderComponent>();
 
                     bool collision = false;
 
@@ -192,20 +192,20 @@ class CollisionSystem : public System {
                         if (collision) resolveCircleCircle(a, b);
 
                     } else if (a_rect && b_rect) {
-                        auto& ar = a.getComponent<RectangleColliderComponent>();
+                        auto& ar = a.getComponent<BoxColliderComponent>();
                         auto& at = a.getComponent<TransformComponent>();
-                        auto& br = b.getComponent<RectangleColliderComponent>();
+                        auto& br = b.getComponent<BoxColliderComponent>();
                         auto& bt = b.getComponent<TransformComponent>();
-                        collision = checkRentangularCollision(  // ← system method, not entity
+                        collision = checkBoxCollision(  // ← system method, not entity
                             ar.getMin(at), ar.getMax(at),
                             br.getMin(bt), br.getMax(bt)
                         );
-                        if (collision) resolveRectRect(a, b);
+                        if (collision) resolveBoxRect(a, b);
 
                     } else if (a_circle && b_rect) {
                         auto& ac = a.getComponent<CircleColliderComponent>();
                         auto& at = a.getComponent<TransformComponent>();
-                        auto& br = b.getComponent<RectangleColliderComponent>();
+                        auto& br = b.getComponent<BoxColliderComponent>();
                         auto& bt = b.getComponent<TransformComponent>();
                         collision = checkCircleRectCollision(
                             ac.getCenter(at), ac.getScaledRadius(at),
@@ -214,7 +214,7 @@ class CollisionSystem : public System {
                         if (collision) resolveCircleRect(a, b);
 
                     } else if (a_rect && b_circle) {
-                        auto& ar = a.getComponent<RectangleColliderComponent>();
+                        auto& ar = a.getComponent<BoxColliderComponent>();
                         auto& at = a.getComponent<TransformComponent>();
                         auto& bc = b.getComponent<CircleColliderComponent>();
                         auto& bt = b.getComponent<TransformComponent>();
@@ -246,7 +246,7 @@ class CollisionSystem : public System {
             return glm::length(center - closest) < radius;
         }
 
-        bool checkRentangularCollision(glm::vec2 a_min, glm::vec2 a_max, glm::vec2 b_min, glm::vec2 b_max) {
+        bool checkBoxCollision(glm::vec2 a_min, glm::vec2 a_max, glm::vec2 b_min, glm::vec2 b_max) {
             return (a_min.x < b_max.x && a_max.x > b_min.x &&
                     a_min.y < b_max.y && a_max.y > b_min.y);
         }
