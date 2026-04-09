@@ -13,7 +13,7 @@
 #include "../assetManager/assetManager.hpp"
 #include "../eventManager/eventManager.hpp"
 #include "../controllerManager/controllerManager.hpp"
-#include "../sceneManager/sceneLoader.hpp"
+#include "../sceneManager/sceneManager.hpp"
 
 const int FRAMES_PER_SECOND = 60;
 const int MILLISECS_PER_FRAME = 1000 / FRAMES_PER_SECOND;
@@ -21,7 +21,6 @@ const int MILLISECS_PER_FRAME = 1000 / FRAMES_PER_SECOND;
 class Game {
     private:
         SDL_Window* window = nullptr;
-        SDL_Renderer* renderer = nullptr;
         static SDL_Event event;
         
         int window_width = 800;
@@ -33,25 +32,27 @@ class Game {
         bool is_running = false;
 
         void setup();
-        void processInput();
         void update();
         void render();
+        void runScene();
+        void processInput();
+  
         Game();
         ~Game();
 
+    public:
+        SDL_Renderer* renderer = nullptr;
         std::unique_ptr<AssetManager> asset_manager;
         std::unique_ptr<EventManager> event_manager;
+        std::unique_ptr<ControllerManager> controller_manager;
+        std::unique_ptr<SceneManager> scene_manager;
         std::unique_ptr<Registry> registry;
         sol::state lua;
-
-        std::unique_ptr<SceneLoader> scene_loader;
-
-    public:
+        
         static Game& getInstance();
-        std::unique_ptr<ControllerManager> controller_manager;
         void init();
         void run();
-        void destroy();
+        void destroy();        
 };
 
 

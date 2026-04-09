@@ -12,10 +12,16 @@
 
 class SceneLoader {
     private:
+        void loadFonts(const sol::table& fonts, \
+            std::unique_ptr<AssetManager>& asset_manager);
+
         void loadSprites(SDL_Renderer* renderer, \
             const sol::table& sprites, std::unique_ptr<AssetManager>& asset_manager);
 
         void loadKeys(const sol::table& keys, \
+            std::unique_ptr<ControllerManager>& controller_manager);
+
+        void loadButtons(const sol::table& buttons, \
             std::unique_ptr<ControllerManager>& controller_manager);
 
         void loadEntities(sol::state& lua, const sol::table& entities, \
@@ -38,6 +44,12 @@ class SceneLoader {
         void loadSprite(Entity& entity, const sol::table& components);
 
         void loadTransform(Entity& entity, const sol::table& components);
+
+        void loadText(Entity& entity, const sol::table& components);
+
+        void loadClickable(Entity& entity, const sol::table& components);
+
+        void loadButton();
 
     public:
         SceneLoader();

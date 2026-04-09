@@ -3,6 +3,8 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_ttf.h>
+
 #include <iostream>
 #include <map>
 #include <string>
@@ -10,6 +12,7 @@
 class AssetManager {
     private:
         std::map<std::string, SDL_Texture*> textures;
+        std::map<std::string, TTF_Font*> fonts;
         
     public:
         AssetManager();
@@ -24,6 +27,10 @@ class AssetManager {
         );
 
         SDL_Texture* getTexture(const std::string& textureId);
+
+        void addFont(const std::string& font_id, const std::string& file_path, int font_size);
+
+        TTF_Font* getFont(const std::string& font_id);
 
 };
 

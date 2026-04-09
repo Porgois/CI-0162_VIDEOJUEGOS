@@ -39,7 +39,7 @@ class Entity {
         std::string name;
     
     public:
-        Entity(int id, std::string name) : id(id), name(name) {}
+        Entity(int id) : id(id) {}
         int getId() const;
         std::string getName() const;
         void kill();
@@ -51,7 +51,7 @@ class Entity {
         bool operator>(const Entity other) const { return id > other.id; }
         bool operator<(const Entity other) const { return id < other.id; }
 
-        // Easy component adition
+        // Easy component addition
         template <typename TComponent, typename... TArgs>
         void addComponent(TArgs&&... args);
 
@@ -89,15 +89,15 @@ class Registry {
     private:
         int numEntity = 0;
     
-    std::vector<std::shared_ptr<IPool>> componentPools;
-    std::vector<signature> entityComponentSignatures;
-    
-    std::unordered_map<std::type_index, std::shared_ptr<System>> systems;
+        std::vector<std::shared_ptr<IPool>> componentPools;
+        std::vector<signature> entityComponentSignatures;
+        
+        std::unordered_map<std::type_index, std::shared_ptr<System>> systems;
 
-    std::set<Entity> entitiesToAdd;
-    std::set<Entity> entitiesToDelete;
+        std::set<Entity> entitiesToAdd;
+        std::set<Entity> entitiesToDelete;
 
-    std::deque<int> freeIds;
+        std::deque<int> freeIds;
 
     public:
         Registry();
@@ -106,7 +106,7 @@ class Registry {
     void update();
     
     // Entity Management
-    Entity createEntity(std::string name);
+    Entity createEntity();
     void destroyEntity(Entity entity);
 
     // Component Management
@@ -138,6 +138,9 @@ class Registry {
     // Add or remove entities from systems
     void addSystemsEntity(Entity entity);
     void removeSystemsEntity(Entity entity);
+
+    // Reset registry
+    void clearAllEntities();
 };
 
 template <typename TComponent>

@@ -13,6 +13,8 @@
 #include "../components/circleColliderComponent.hpp"
 #include "../components/boxColliderComponent.hpp"
 #include "../components/colliderComponent.hpp"
+#include "../components/textComponent.hpp"
+#include "../components/clickableComponent.hpp"
 
 SceneLoader::SceneLoader() {
     std::cout << "[SCENE LOADER] Executes constructor!" << std::endl;
@@ -43,6 +45,12 @@ void SceneLoader::loadScene(const std::string& scene_path, \
     sol::table sprites = scene["sprites"];
     loadSprites(renderer, sprites, asset_manager);
 
+    sol::table fonts = scene["fonts"];
+    loadFonts(fonts, asset_manager);
+
+    sol::table buttons = scene["buttons"];
+    loadButtons(buttons, controller_manager);
+
     sol::table keys = scene["keys"];
     loadKeys(keys, controller_manager);
 
@@ -61,11 +69,10 @@ void SceneLoader::loadSprites(SDL_Renderer* renderer, \
         }
 
         sol::table sprite = sprites[index];
-
-        std::string assetId = sprite["assetId"];
+        std::string asset_id = sprite["asset_id"];
         std::string file_path = sprite["file_path"];
 
-        asset_manager->addTexture(renderer, assetId, file_path);
+        asset_manager->addTexture(renderer, asset_id, file_path);
         index++;
     } 
 }
@@ -111,6 +118,14 @@ void SceneLoader::loadAnimation(Entity& entity, const sol::table& components) {
             }
         }
       
+    }
+}
+
+void SceneLoader::loadClickable(Entity& entity, const sol::table& components) {
+    sol::optional<sol::table> has_clickable = components["clickable"];
+
+    if (has_clickable != sol::nullopt) {
+        entity.addComponent<ClickableComponent>();
     }
 }
 
@@ -175,11 +190,22 @@ void SceneLoader::loadScript(sol::state& lua, Entity& entity, const sol::table& 
     sol::optional<sol::table> has_script = components["script"];
 
     if (has_script != sol::nullopt) {
+        lua["on_click"] = sol::nil;
         lua["update"] = sol::nil;
-
+   
         std::string script_path = components["script"]["path"];
         lua.script_file(script_path);
 
+
+        // On click
+        sol::optional<sol::function> has_on_click = lua["on_click"];
+        sol::function on_click = sol::nil;
+
+        if (has_on_click != sol::nullopt) {
+            on_click = lua["on_click"];
+        }
+
+        // Update
         sol::optional<sol::function> has_update = lua["update"];
         sol::function update = sol::nil;
 
@@ -187,7 +213,7 @@ void SceneLoader::loadScript(sol::state& lua, Entity& entity, const sol::table& 
             update = lua["update"];
         }
 
-        entity.addComponent<ScriptComponent>(update);
+        entity.addComponent<ScriptComponent>(update, on_click);
     }
 }
 
@@ -224,6 +250,20 @@ void SceneLoader::loadTransform(Entity& entity, const sol::table& components) {
     }
 }
 
+void SceneLoader::loadText(Entity& entity, const sol::table& components) {
+    sol::optional<sol::table> has_text = components["text"];
+
+    if (has_text != sol::nullopt) {
+        entity.addComponent<TextComponent>(
+            components["text"]["text"],
+            components["text"]["font_id"],
+            components["text"]["r"],
+            components["text"]["g"],
+            components["text"]["b"],
+            components["text"]["a"]
+        );
+    }
+}
 
 void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, \
     std::unique_ptr<Registry>& registry) {
@@ -237,7 +277,7 @@ void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, \
 
         sol::table entity = entities[index];
         
-        Entity new_entity = registry->createEntity("");
+        Entity new_entity = registry->createEntity();
 
         sol::optional<sol::table> has_components = entity["components"];
 
@@ -245,6 +285,14 @@ void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, \
             sol::table components = entity["components"];
 
             // Box Collider
+            loadText(new_entity, components);
+            std::cout << "[SCENE LOADER] Loading text..." << std::endl;
+            // Button
+            //loadButton(new_entity, components);
+            //std::cout << "[SCENE LOADER] Loading button..." << std::endl;
+            std::cout << "[SCENE LOADER] Loading clickable..." << std::endl;
+            loadClickable(new_entity, components);
+            std::cout << "[SCENE LOADER] Loading animation..." << std::endl;
             loadAnimation(new_entity, components);
             std::cout << "[SCENE LOADER] Loading cursor..." << std::endl;
             loadCursor(new_entity, components);
@@ -265,3 +313,42 @@ void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, \
     }
 }
 
+void SceneLoader::loadFonts(const sol::table& fonts, \
+    std::unique_ptr<AssetManager>& asset_manager) {
+    int index = 0;
+    while (true) {
+        sol::optional<sol::table> has_font = fonts[index];
+
+        if (has_font == sol::nullopt) { // nothing
+            break;
+        }
+
+        sol::table font = fonts[index];
+        std::string font_id = font["font_id"];
+        std::string file_path = font["file_path"];
+        int size = font["font_size"];
+
+        asset_manager->addFont(font_id, file_path, size);
+        index++;
+    }
+}
+
+void SceneLoader::loadButtons(const sol::table& buttons, \
+    std::unique_ptr<ControllerManager>& controller_manager) {
+    int index = 0;
+    while (true) {
+        sol::optional<sol::table> has_button = buttons[index];
+
+        if (has_button == sol::nullopt) { // nothing
+            break;
+        }
+
+        sol::table button = buttons[index];
+        std::string button_name = button["name"];
+        int button_code = button["button"];
+
+
+        controller_manager->addMouseButton(button_name, button_code);
+        index++;
+    }
+}

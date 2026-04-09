@@ -22,6 +22,7 @@ class ScriptSystem : public System {
             lua.set_function("is_action_active", isActionActive);
             lua.set_function("set_velocity", setVelocity);
             lua.set_function("play_animation", setAnimation);
+            lua.set_function("go_to_scene", goToScene);
         }
 
         void update(sol::state& lua) {

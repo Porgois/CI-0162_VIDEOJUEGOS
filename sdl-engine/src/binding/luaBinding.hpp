@@ -5,6 +5,7 @@
 
 #include "../game/game.hpp"
 #include "../components/rigidBodyComponent.hpp"
+#include "../components/animationComponent.hpp"
 #include "../e.c.s./ecs.hpp"
 
 // Controls
@@ -23,6 +24,12 @@ void setVelocity(Entity entity, float velocity_x, float velocity_y) {
 void setAnimation(Entity entity, const std::string animation_name) {
     auto& animation = entity.getComponent<AnimationComponent>();
     animation.play(animation_name);
+}
+
+// Scene switching
+void goToScene(const std::string& scene_name) {
+    Game::getInstance().scene_manager->setNextScene(scene_name);
+    Game::getInstance().scene_manager->stopScene();
 }
 
 #endif // LUA_BINDING_HPP

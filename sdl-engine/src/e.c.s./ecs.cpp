@@ -41,7 +41,7 @@ void Entity::kill() {
     registry->destroyEntity(*this);
 }
 
-Entity Registry::createEntity(std::string name = "") {
+Entity Registry::createEntity() {
     int entity_id;
 
     if (freeIds.empty()) {
@@ -55,7 +55,7 @@ Entity Registry::createEntity(std::string name = "") {
         freeIds.pop_front(); // Use the value and remove it
     }
 
-    Entity entity(entity_id, name);
+    Entity entity(entity_id);
     entity.registry = this;
     entitiesToAdd.insert(entity);
     
@@ -107,4 +107,12 @@ void Registry::update() {
     }
 
     entitiesToDelete.clear();
+}
+
+void Registry::clearAllEntities() {
+    for (int i = 0; i < numEntity; i++) {
+        removeSystemsEntity(Entity(i));
+        entityComponentSignatures[i].reset();
+        freeIds.push_back(i);
+    }
 }

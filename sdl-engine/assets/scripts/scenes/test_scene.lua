@@ -2,13 +2,16 @@ scene = {
     -- Sprite table
     sprites = {
         [0] =
-        {assetId = "cursor", file_path = "./assets/ui/cursors/cursor.png"},
-        {assetId = "player", file_path = "./assets/sprites/characters/player/player_sprite_sheet.png"},
-        {assetId = "player_ship", file_path = "./assets/sprites/enviroment/barrel_sprite.png"}
+        {asset_id = "cursor", file_path = "./assets/ui/cursors/cursor.png"},
+        {asset_id = "player", file_path = "./assets/sprites/characters/player/player_sprite_sheet.png"},
+        {asset_id = "player_ship", file_path = "./assets/sprites/enviroment/barrel_sprite.png"}
     },
 
-    -- TODO: Font table
-
+    -- Font table
+    fonts = {
+        [0] = 
+        {font_id = "pixel_sleigh_24", file_path = "./assets/fonts/PixelSleigh.ttf", font_size = 24}
+    },
 
     -- Key & action table
     keys = {
@@ -19,7 +22,11 @@ scene = {
         {name = "move_right", key = 100}
     },
 
-    -- TODO: Mouse buttons & actions table
+    -- Mouse buttons & actions table
+    buttons = {
+        [0] = 
+        {name = "LMB", button = 1}
+    },
 
     -- Entity table
     entities = {
@@ -35,8 +42,8 @@ scene = {
             components = {
                 animation = {
                     clips = {
-                        idle = {row = 0, num_frames = 4, animation_speed = 8, loop = true},
-                        walk = {row = 1, num_frames = 6, animation_speed = 13, loop = true}
+                        idle = {row = 0, num_frames = 4, animation_speed = 9, loop = true},
+                        walk = {row = 1, num_frames = 6, animation_speed = 12, loop = true}
                     }
                 },
                 script  = {path = "./assets/scripts/player.lua"},
