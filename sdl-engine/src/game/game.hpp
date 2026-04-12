@@ -21,11 +21,9 @@ const int MILLISECS_PER_FRAME = 1000 / FRAMES_PER_SECOND;
 class Game {
     private:
         SDL_Window* window = nullptr;
+        SDL_Rect camera = {0, 0, 0, 0};
         static SDL_Event event;
         
-        int window_width = 800;
-        int window_height = 600;
-
         // For delta-time calculations
         int millisecs_previous_frame = 0;
 
@@ -41,6 +39,10 @@ class Game {
         ~Game();
 
     public:
+        int window_width = 800;
+        int window_height = 600;
+        int map_width = 0;
+        int map_height = 0;
         SDL_Renderer* renderer = nullptr;
         std::unique_ptr<AssetManager> asset_manager;
         std::unique_ptr<EventManager> event_manager;

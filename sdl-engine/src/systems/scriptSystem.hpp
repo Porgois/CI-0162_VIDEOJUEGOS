@@ -20,9 +20,18 @@ class ScriptSystem : public System {
 
             // functions
             lua.set_function("is_action_active", isActionActive);
-            lua.set_function("set_velocity", setVelocity);
             lua.set_function("play_animation", setAnimation);
             lua.set_function("go_to_scene", goToScene);
+            lua.set_function("get_tag", getTag);
+            lua.set_function("left_collision", leftCollision);
+            lua.set_function("right_collision", rightCollision);
+            lua.set_function("set_velocity", setVelocity);
+            lua.set_function("get_velocity", getVelocity);
+            lua.set_function("get_position", getPosition);
+            lua.set_function("get_previous_position", getPreviousPosition);
+            lua.set_function("set_position", setPosition);
+            lua.set_function("get_collider_size", getColliderSize);
+            lua.set_function("get_collider_offset", getColliderOffset);
         }
 
         void update(sol::state& lua) {

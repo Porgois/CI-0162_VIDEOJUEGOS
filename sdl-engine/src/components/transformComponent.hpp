@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 
 struct TransformComponent {
+    glm::vec2 previous_position;
     glm::vec2 position;
     glm::vec2 scale;
     double rotation;
@@ -14,6 +15,7 @@ struct TransformComponent {
         double rotation = double(0.0)
     ) {
         this->position = position;
+        this->previous_position = position;
         this->scale = scale; 
         this->rotation = rotation;
     }

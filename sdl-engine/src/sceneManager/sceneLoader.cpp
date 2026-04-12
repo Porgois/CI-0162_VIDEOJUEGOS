@@ -15,6 +15,8 @@
 #include "../components/colliderComponent.hpp"
 #include "../components/textComponent.hpp"
 #include "../components/clickableComponent.hpp"
+#include "../components/cameraFollowComponent.hpp"
+#include "../components/tagComponent.hpp"
 
 SceneLoader::SceneLoader() {
     std::cout << "[SCENE LOADER] Executes constructor!" << std::endl;
@@ -97,6 +99,15 @@ void SceneLoader::loadKeys(const sol::table& keys, \
     }
 }
 
+void SceneLoader::loadTag(Entity& entity, const sol::table& components) {
+    sol::optional<sol::table> has_tag = components["tag"];
+
+    if (has_tag != sol::nullopt) {
+        std::string tag_name = components["tag"]["tag"];
+        entity.addComponent<TagComponent>(tag_name);
+    }
+}
+
 void SceneLoader::loadAnimation(Entity& entity, const sol::table& components) {
     sol::optional<sol::table> has_animation = components["animation"];
 
@@ -145,7 +156,6 @@ void SceneLoader::loadCollider(Entity& entity, const sol::table& components) {
     }
 }
 
-//int width = 0, int height = 0, glm::vec2 offset = glm::vec2(0.0, 0.0)
 void SceneLoader::loadBoxCollider(Entity& entity, const sol::table& components) {
     sol::optional<sol::table> has_box_collider = components["box_collider"];
 
@@ -192,10 +202,10 @@ void SceneLoader::loadScript(sol::state& lua, Entity& entity, const sol::table& 
     if (has_script != sol::nullopt) {
         lua["on_click"] = sol::nil;
         lua["update"] = sol::nil;
+        lua["on_collision"] = sol::nil;
    
         std::string script_path = components["script"]["path"];
         lua.script_file(script_path);
-
 
         // On click
         sol::optional<sol::function> has_on_click = lua["on_click"];
@@ -213,7 +223,15 @@ void SceneLoader::loadScript(sol::state& lua, Entity& entity, const sol::table& 
             update = lua["update"];
         }
 
-        entity.addComponent<ScriptComponent>(update, on_click);
+        // Collision
+        sol::optional<sol::function> has_on_collision = lua["on_collision"];
+        sol::function on_collision = sol::nil;
+
+        if (has_on_collision != sol::nullopt) {
+            on_collision = lua["on_collision"];
+        }
+
+        entity.addComponent<ScriptComponent>(update, on_click, on_collision);
     }
 }
 
@@ -227,6 +245,7 @@ void SceneLoader::loadSprite(Entity& entity, const sol::table& components) {
             components["sprite"]["height"],
             components["sprite"]["src_rect"]["x"],
             components["sprite"]["src_rect"]["y"],
+            components["sprite"]["z_index"].get_or(0), // 0 default
             components["sprite"]["flip"]
         );
     }
@@ -262,54 +281,6 @@ void SceneLoader::loadText(Entity& entity, const sol::table& components) {
             components["text"]["b"],
             components["text"]["a"]
         );
-    }
-}
-
-void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, \
-    std::unique_ptr<Registry>& registry) {
-    int index = 0;
-    while (true) {
-        sol::optional<sol::table> has_entity = entities[index];
-
-        if (has_entity == sol::nullopt) { // nothing
-            break;
-        }
-
-        sol::table entity = entities[index];
-        
-        Entity new_entity = registry->createEntity();
-
-        sol::optional<sol::table> has_components = entity["components"];
-
-        if (has_components != sol::nullopt) {
-            sol::table components = entity["components"];
-
-            // Box Collider
-            loadText(new_entity, components);
-            std::cout << "[SCENE LOADER] Loading text..." << std::endl;
-            // Button
-            //loadButton(new_entity, components);
-            //std::cout << "[SCENE LOADER] Loading button..." << std::endl;
-            std::cout << "[SCENE LOADER] Loading clickable..." << std::endl;
-            loadClickable(new_entity, components);
-            std::cout << "[SCENE LOADER] Loading animation..." << std::endl;
-            loadAnimation(new_entity, components);
-            std::cout << "[SCENE LOADER] Loading cursor..." << std::endl;
-            loadCursor(new_entity, components);
-            std::cout << "[SCENE LOADER] Loading circle collider..." << std::endl;
-            loadCircleCollider(new_entity, components);
-            std::cout << "[SCENE LOADER] Loading rigidbody..." << std::endl;
-            loadRigidbody(new_entity, components);
-            std::cout << "[SCENE LOADER] Loading sprite..." << std::endl;
-            loadSprite(new_entity, components);
-            std::cout << "[SCENE LOADER] Loading transform..." << std::endl;
-            loadTransform(new_entity, components);
-            std::cout << "[SCENE LOADER] Loading script..." << std::endl;
-            loadScript(lua, new_entity, components);
-            std::cout << "[SCENE LOADER] All components loaded!" << std::endl;
-        }
-
-        index++;
     }
 }
 
@@ -352,3 +323,51 @@ void SceneLoader::loadButtons(const sol::table& buttons, \
         index++;
     }
 }
+
+void SceneLoader::loadCameraFollow(Entity& entity, const sol::table& components) {
+    sol::optional<sol::table> has_camera_follow = components["camera_follow"];
+
+    if (has_camera_follow != sol::nullopt) {
+        entity.addComponent<CameraFollowComponent>();
+    }
+}
+
+void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, \
+    std::unique_ptr<Registry>& registry) {
+    int index = 0;
+    while (true) {
+        sol::optional<sol::table> has_entity = entities[index];
+
+        if (has_entity == sol::nullopt) { // nothing
+            break;
+        }
+
+        sol::table entity = entities[index];
+        
+        Entity new_entity = registry->createEntity();
+
+        sol::optional<sol::table> has_components = entity["components"];
+
+        if (has_components != sol::nullopt) {
+            sol::table components = entity["components"];
+
+            loadText(new_entity, components);
+            loadTag(new_entity, components);
+            //loadButton(new_entity, components);
+            loadClickable(new_entity, components);
+            loadAnimation(new_entity, components);
+            loadCursor(new_entity, components);
+            loadBoxCollider(new_entity, components);
+            loadCircleCollider(new_entity, components);
+            loadRigidbody(new_entity, components);
+            loadSprite(new_entity, components);
+            loadCameraFollow(new_entity, components);
+            loadTransform(new_entity, components);
+            loadScript(lua, new_entity, components);
+        }
+
+        index++;
+    }
+}
+
+// Video #4 Deteccion colision

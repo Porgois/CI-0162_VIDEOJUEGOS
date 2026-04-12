@@ -12,15 +12,15 @@ struct CircleColliderComponent {
         this->height = height;
     }
 
-    glm::vec2 getCenter(TransformComponent& t) {
+    glm::vec2 getCenter(TransformComponent& transform) {
         return glm::vec2(
-            t.position.x + (this->width  / 2.0f) * t.scale.x,
-            t.position.y + (this->height / 2.0f) * t.scale.y
+            transform.position.x + (this->width / 2) * transform.scale.x,
+            transform.position.y + (this->height / 2) * transform.scale.y
         );
     }
 
-    float getScaledRadius(TransformComponent& t) {
-        return this->radius * t.scale.x;
+    float getScaledRadius(TransformComponent& transform) {
+        return this->radius * transform.scale.x;
     }
 };
 

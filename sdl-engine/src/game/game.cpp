@@ -10,11 +10,13 @@
 #include "../systems/cursorSystem.hpp"
 #include "../systems/animationSystem.hpp"
 #include "../systems/flashlightRenderSystem.hpp"
-#include "../systems/collisionSystem.hpp"
+#include "../systems/circleCollisionSystem.hpp"
+#include "../systems/boxCollisionSystem.hpp"
 #include "../systems/movementSystem.hpp"
 #include "../systems/renderSystem.hpp"
-#include "../systems/damageSystem.hpp"
+//#include "../systems/damageSystem.hpp"
 #include "../systems/uISystem.hpp"
+#include "../systems/cameraMovementSystem.hpp"
 
 // Constructor
 Game::Game() {
@@ -57,6 +59,10 @@ void Game::init() {
         return;
     }
 
+    // Setup map values
+    map_height = 2000;
+    map_width = 2000;
+
     // Create the game window
     window = SDL_CreateWindow(
         "2D Game Engine",
@@ -65,7 +71,6 @@ void Game::init() {
         window_width,
         window_height,
         SDL_WINDOW_SHOWN // Flags: https://wiki.libsdl.org/SDL2/SDL_WindowFlags
-
     );
 
     if (!window) {
@@ -79,6 +84,12 @@ void Game::init() {
         -1, // screen driver; [the index of the rendering driver]
         0 // flags (no flags) https://wiki.libsdl.org/SDL2/SDL_RendererFlags
     );
+
+    // Camera setup
+    camera.x = 0;
+    camera.y = 0;
+    camera.w = window_width;
+    camera.h = window_height;
 
     if (!renderer) {
         std::cerr << "[GAME] Could not create the game *renderer*!" << std::endl;
@@ -95,42 +106,20 @@ void Game::setup() {
     registry->addSystem<ScriptSystem>();
     registry->addSystem<CursorSystem>();
     registry->addSystem<AnimationSystem>();
+    registry->addSystem<CameraMovementSystem>();
     registry->addSystem<RenderSystem>();
     registry->addSystem<MovementSystem>();
-    registry->addSystem<CollisionSystem>();
-    registry->addSystem<DamageSystem>();
+    registry->addSystem<CircleCollisionSystem>();
+    registry->addSystem<BoxCollisionSystem>();
+    //registry->addSystem<DamageSystem>();
     registry->addSystem<FlashlightRenderSystem>(renderer, window_width, window_height);
     registry->addSystem<FlipSystem>();
     registry->addSystem<TextRenderSystem>();
     registry->addSystem<UISystem>();
-
-    scene_manager->loadScriptScenes("./assets/scripts/scenes/scenes.lua", lua);
-
-    // Add lua libraries
-    lua.open_libraries(sol::lib::base, sol::lib::math);
-
-    // Bind
-    registry->getSystem<ScriptSystem>().createLuaBinding(lua);
-
-    // // Add textures
-    // asset_manager->addTexture(renderer, "barrel", "./assets/sprites/environment/barrel_sprite.png");
-    // asset_manager->addTexture(renderer, "flashlight-cone", "./assets/sprites/masks/cone.png");
-    // asset_manager->addTexture(renderer, "flashlight-source", "./assets/sprites/masks/circle.png");
-
    
-    // player.addComponent<FlashlightComponent>("flashlight-cone", "flashlight-source", 520, 275);
-
-    // // Barrel
-    // Entity barrel = registry->createEntity("barrel");
-    // barrel.addComponent<TransformComponent> (glm::vec2(30, 80), glm::vec2(5.0, 5.0), 0.0);
-    // barrel.addComponent<SpriteComponent>("barrel", 13, 16, 0, 0, false);
-    // barrel.addComponent<ColliderComponent>();
-    
-    // //(sprite base formula)
-    // //offset.x = (sprite_width  - collider_width)  / 2   ← center horizontally
-    // //offset.y =  sprite_height - collider_height         ← push to bottom
-
-    // barrel.addComponent<BoxColliderComponent>(12, 8, glm::vec2(0.5, 7.0));
+    lua.open_libraries(sol::lib::base, sol::lib::math); // libraries
+    registry->getSystem<ScriptSystem>().createLuaBinding(lua); // bindings
+    scene_manager->loadScriptScenes("./assets/scripts/scenes/scenes.lua", lua); // scenes
 }
 
 // Processes all kinds of input
@@ -207,10 +196,12 @@ void Game::update() {
     registry->update();
     registry->getSystem<ScriptSystem>().update(lua);
     
-    registry->getSystem<FlipSystem>().update();
+    registry->getSystem<FlipSystem>().update(camera);
     registry->getSystem<AnimationSystem>().update();
     registry->getSystem<MovementSystem>().update(delta_time);
-    registry->getSystem<CollisionSystem>().update(event_manager);
+    registry->getSystem<CameraMovementSystem>().update(camera);
+    registry->getSystem<BoxCollisionSystem>().update(lua);
+    registry->getSystem<CircleCollisionSystem>().update(event_manager);
 }
 
 // Renders the screen contents
@@ -218,7 +209,7 @@ void Game::render() {
     SDL_SetRenderDrawColor(renderer, 117, 167, 67, 255); // greenish background
     SDL_RenderClear(renderer);
     
-    registry->getSystem<RenderSystem>().update(renderer, asset_manager);
+    registry->getSystem<RenderSystem>().update(renderer, asset_manager, camera);
     //registry->getSystem<FlashlightRenderSystem>().update(renderer, asset_manager);
     registry->getSystem<TextRenderSystem>().update(renderer, asset_manager);
     registry->getSystem<CursorSystem>().update(renderer, asset_manager);

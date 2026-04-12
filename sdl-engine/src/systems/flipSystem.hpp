@@ -13,7 +13,7 @@ class FlipSystem : public System {
             requireComponent<TransformComponent>();
         }
 
-        void update() {
+        void update(SDL_Rect& camera) {
             for (auto entity : getSystemEntities()) {
                 auto& sprite = entity.getComponent<SpriteComponent>();
                 const auto& transform = entity.getComponent<TransformComponent>();
@@ -23,7 +23,7 @@ class FlipSystem : public System {
                 int mouse_x, mouse_y;
                 SDL_GetMouseState(&mouse_x, &mouse_y);
 
-                float center_x = transform.position.x + (sprite.width * transform.scale.x) / 2.0f;
+                float center_x = (transform.position.x - camera.x)+ (sprite.width * transform.scale.x) / 2.0f;
                 sprite.flip = (mouse_x < center_x) ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
             }
         }

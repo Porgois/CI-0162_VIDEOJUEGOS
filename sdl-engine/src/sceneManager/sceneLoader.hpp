@@ -27,6 +27,8 @@ class SceneLoader {
         void loadEntities(sol::state& lua, const sol::table& entities, \
             std::unique_ptr<Registry>& registry);
         
+        void loadTag(Entity& entity, const sol::table& components);
+
         void loadAnimation(Entity& entity, const sol::table& components);
         
         void loadCursor(Entity& entity, const sol::table& components);
@@ -48,6 +50,8 @@ class SceneLoader {
         void loadText(Entity& entity, const sol::table& components);
 
         void loadClickable(Entity& entity, const sol::table& components);
+
+        void loadCameraFollow(Entity& entity, const sol::table& components);
 
         void loadButton();
 

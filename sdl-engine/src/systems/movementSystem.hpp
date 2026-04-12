@@ -17,6 +17,9 @@ class MovementSystem : public System {
                 // Get neccesary components
                 auto& transform = entity.getComponent<TransformComponent>();
                 const auto& rigid_body = entity.getComponent<RigidBodyComponent>();
+
+                // Update previous position
+                transform.previous_position = transform.position;
                 
                 // Update velocity
                 transform.position.x += rigid_body.velocity.x * delta_time;
@@ -26,3 +29,5 @@ class MovementSystem : public System {
 };
 
 #endif // MOVEMENT_SYSTEM_HPP
+
+// Video #2 tiles minuto 3:35

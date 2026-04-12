@@ -16,11 +16,7 @@ class RenderSystem : public System {
             requireComponent<TransformComponent>();
         }
 
-        void update(SDL_Renderer* renderer, std::unique_ptr<AssetManager>& asset_manager) {
-            // Y-sort
-            auto entities = getSystemEntities();
-
-            //sort by y position before render
+        void ySort(std::vector<Entity>& entities) {
             std::sort(entities.begin(), entities.end(), [](Entity a, Entity b) {
                 auto& a_transform = a.getComponent<TransformComponent>();
                 auto& b_transform = b.getComponent<TransformComponent>();
@@ -29,9 +25,20 @@ class RenderSystem : public System {
 
                 float a_base = a_transform.position.y + (a_sprite.height * a_transform.scale.y);
                 float b_base = b_transform.position.y + (b_sprite.height * b_transform.scale.y);
+                
+                if (a_sprite.z_index != b_sprite.z_index) { // take z_index into account when sorting
+                    return a_sprite.z_index < b_sprite.z_index;
+                }
 
                 return a_base < b_base;
             }); 
+        }
+
+        void update(SDL_Renderer* renderer, std::unique_ptr<AssetManager>& asset_manager, SDL_Rect& camera) {
+            auto entities = getSystemEntities();
+
+            //sort by y position before render
+            ySort(entities);
 
             for (auto entity : entities) {
                 const auto& sprite = entity.getComponent<SpriteComponent>();
@@ -41,8 +48,8 @@ class RenderSystem : public System {
 
                 // Create rendered element
                 SDL_Rect dstRect = {
-                    static_cast<int>(transform.position.x),
-                    static_cast<int>(transform.position.y),
+                    static_cast<int>(transform.position.x - camera.x), // x adjust for camera follow
+                    static_cast<int>(transform.position.y - camera.y), // y adjust for camera follow
                     static_cast<int>(sprite.width * transform.scale.x),
                     static_cast<int>(sprite.height * transform.scale.y)
                 };

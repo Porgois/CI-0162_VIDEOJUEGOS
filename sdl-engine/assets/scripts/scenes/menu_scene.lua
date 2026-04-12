@@ -23,23 +23,21 @@ scene = {
 
     -- Entity table
     entities = {
-        [0] = -- cursor
-        {
+        [0] = 
+        { -- cursor
             components = {
                 sprite = {assetId = "cursor", width = 4, height = 4, src_rect = {x = 0, y = 0}, flip = false},
                 cursor = {}
             }
         },
-        [1] = -- Game title
-        {
+        { -- Game title
             components = {
                 clickable = {},
                 text = {text = "Game title", font_id = "pixel_sleigh_32", r = 255, g = 255, b = 255, a = 255},
                 transform = {position = {x = 50.0, y = 50.0}, scale = {x = 1.0, y = 1.0}, rotation = 0.0}
             }
         },
-        [2] = -- New game
-        {
+        { -- New game
             components = {
                 clickable = {},
                 script = {path = "./assets/scripts/menu_button_01.lua"},
@@ -47,16 +45,14 @@ scene = {
                 transform = {position = {x = 50.0, y = 110.0}, scale = {x = 1.0, y = 1.0}, rotation = 0.0}
             }
         },
-        [3] = -- Options
-        {
+        { -- Options
             components = {
                 clickable = {},
                 text = {text = "Options", font_id = "pixel_sleigh_24", r = 255, g = 255, b = 255, a = 255},
                 transform = {position = {x = 50.0, y = 170.0}, scale = {x = 1.0, y = 1.0}, rotation = 0.0}
             }
         },
-        [4] = -- Quit
-        {
+        { -- Quit
             components = {
                 clickable = {},
                 text = {text = "Quit", font_id = "pixel_sleigh_24", r = 255, g = 255, b = 255, a = 255},

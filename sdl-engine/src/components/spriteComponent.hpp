@@ -14,12 +14,16 @@ struct SpriteComponent {
     SDL_RendererFlip flip = SDL_FLIP_NONE;
     bool flip_to_mouse = true;
 
+    // Sorting
+    int z_index = 0;
+
     SpriteComponent(
-        const std::string& textureId = "none", int width = 0, int height = 0, int srcRectX = 0, int srcRectY = 0, bool flip_to_mouse = false) {
+        const std::string& textureId = "none", int width = 0, int height = 0, int srcRectX = 0, int srcRectY = 0, int z_index = 0, bool flip_to_mouse = false) {
         this->textureId = textureId;
         this->width = width;
         this->height = height;
         this->srcRect = {srcRectX, srcRectY, width, height};
+        this->z_index = z_index;
         this->flip_to_mouse = flip_to_mouse;
     }
 };
