@@ -15,20 +15,20 @@ class CameraMovementSystem : public System {
             requireComponent<CameraFollowComponent>();
         }
 
-        void update(SDL_Rect& camera) {
+        void update(SDL_Rect& camera, float zoom_level) {
             for (auto& entity : getSystemEntities()) {
                 const auto& transform = entity.getComponent<TransformComponent>();
 
                 // Width
                 if (transform.position.x + (camera.w / 2) 
                     <static_cast<float>(Game::getInstance().map_width)) {
-                    camera.x = static_cast<int>(transform.position.x) - (camera.w / 2);
+                    camera.x = static_cast<int>(transform.position.x * zoom_level) - (camera.w / 2);
                 }
                 
                 // Height
                 if (transform.position.y + (camera.h / 2) 
                     <static_cast<float>(Game::getInstance().map_height)) {
-                    camera.y = static_cast<int>(transform.position.y) - (camera.h / 2);
+                    camera.y = static_cast<int>(transform.position.y * zoom_level) - (camera.h / 2);
                 }
 
                 // Adjust camera

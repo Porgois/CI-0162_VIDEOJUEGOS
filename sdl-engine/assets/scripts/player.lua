@@ -1,4 +1,4 @@
-player_velocity = 150
+player_velocity = 60
 fixed_player_velocity = math.sqrt( (player_velocity * player_velocity) / 2)
 
 function avoid_left_overlap(other)

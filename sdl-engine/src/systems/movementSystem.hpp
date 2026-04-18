@@ -29,5 +29,3 @@ class MovementSystem : public System {
 };
 
 #endif // MOVEMENT_SYSTEM_HPP
-
-// Video #2 tiles minuto 3:35

@@ -175,7 +175,7 @@ void Registry::addComponent(Entity entity, TArgs&&... args) {
 
     TComponent newComponent(std::forward<TArgs>(args)...);
 
-    componentPool->set(entityId, newComponent);
+    componentPool->set(entityId, std::move(newComponent));
     entityComponentSignatures[entityId].set(componentId);
 }
 

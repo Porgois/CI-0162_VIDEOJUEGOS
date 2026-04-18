@@ -3,7 +3,7 @@ STD=-std=c++17
 CFLAGS=-Wall -Wextra
 INC_PATH=-I"./libs/"
 SRC=src/*.cpp src/game/*.cpp src/e.c.s./*.cpp src/assetManager/*.cpp src/controllerManager/*.cpp src/sceneManager/*.cpp
-LFLAGS=-lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer -llua
+LFLAGS=-lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer -llua -ltinyxml2
 EXEC=engine
 
 build:

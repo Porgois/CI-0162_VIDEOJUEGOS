@@ -43,13 +43,8 @@ class Pool : public IPool {
         data.push_back(object);
     }
 
-    void set(unsigned int index, TComponent object) {
-        if ( index + 1 <= data.size()) {
-            data[index] = object;
-        } else {
-            std::cerr << "[POOL] Index higher than vector capacity!" << std::endl;
-            return;
-        }
+    void set(unsigned int index, TComponent&& object) {
+        data[index] = std::move(object);
     }
 
     TComponent& get(unsigned int index) {

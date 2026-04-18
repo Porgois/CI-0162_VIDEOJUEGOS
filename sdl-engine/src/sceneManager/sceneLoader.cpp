@@ -1,8 +1,11 @@
 #include <iostream> 
 #include <glm/glm.hpp>
+#include <SDL2/SDL.h>
+#include <sstream>
 
 #include "./sceneLoader.hpp"
 
+#include "../game/game.hpp"
 #include "../components/scriptComponent.hpp"
 #include "../components/cursorComponent.hpp"
 #include "../components/animationComponent.hpp"
@@ -17,6 +20,8 @@
 #include "../components/clickableComponent.hpp"
 #include "../components/cameraFollowComponent.hpp"
 #include "../components/tagComponent.hpp"
+#include "../components/tileMapComponent.hpp"
+#include "../components/layerComponent.hpp"
 
 SceneLoader::SceneLoader() {
     std::cout << "[SCENE LOADER] Executes constructor!" << std::endl;
@@ -58,6 +63,9 @@ void SceneLoader::loadScene(const std::string& scene_path, \
 
     sol::table entities = scene["entities"];
     loadEntities(lua, entities, registry);
+
+    sol::table maps = scene["maps"];
+    loadMap(renderer, maps, registry, asset_manager);
 }
 
 void SceneLoader::loadSprites(SDL_Renderer* renderer, \
@@ -332,6 +340,248 @@ void SceneLoader::loadCameraFollow(Entity& entity, const sol::table& components)
     }
 }
 
+//* Map
+void SceneLoader::loadMap(SDL_Renderer* renderer, const sol::table map, std::unique_ptr<Registry>& registry, \
+    std::unique_ptr<AssetManager>& asset_manager) {
+    sol::optional<int> has_width = map["width"];
+
+    if (has_width != sol::nullopt) {
+        Game::getInstance().map_width = map["width"];
+    }
+
+    sol::optional<int> has_height = map["height"];
+    if (has_height != sol::nullopt) {
+        Game::getInstance().map_height = map["height"];
+    }
+
+    sol::optional<std::string> has_path = map["map_path"];
+    if (has_path != sol::nullopt) {
+        std::string map_path = map["map_path"];
+
+        // An xml that contains the map data is loaded
+        tinyxml2::XMLDocument xml_map;
+        xml_map.LoadFile(map_path.c_str());
+
+        // Extract the xml document's map root
+        tinyxml2::XMLElement* xml_root = xml_map.RootElement();
+        
+        // Extract the map and tile's width and height
+        int tile_width, tile_height, map_width, map_height;
+        xml_root->QueryIntAttribute("tilewidth", &tile_width);
+        xml_root->QueryIntAttribute("tileheight", &tile_height);
+
+        xml_root->QueryIntAttribute("width", &map_width);
+        xml_root->QueryIntAttribute("height", &map_height);
+
+        // Calculate the map's width and height
+        Game::getInstance().map_width = tile_width * map_width;
+        Game::getInstance().map_height = tile_height * map_height;
+
+        // Load document with tile data
+        std::string tile_path = map["tile_path"];
+        std::string tile_name = map["tile_name"];
+        
+        tinyxml2::XMLDocument xml_tileset;
+        xml_tileset.LoadFile(tile_path.c_str());
+
+        tinyxml2::XMLElement* xml_tileset_root = xml_tileset.RootElement();
+
+        // Extract column count
+        int columns;
+        xml_tileset_root->QueryIntAttribute("columns", &columns);
+
+        // Count layers
+        int total_layers = 0;
+        tinyxml2::XMLElement* count_layer = xml_root->FirstChildElement("layer");
+        while (count_layer != nullptr) {
+            total_layers++;
+            count_layer = count_layer->NextSiblingElement("layer");
+        }
+
+        // Get the first element of 'layer' type
+        tinyxml2::XMLElement* xml_layer = xml_root->FirstChildElement("layer");
+        int layer_index = 0;
+        while (xml_layer != nullptr) {
+            loadLayer(renderer, registry, xml_layer, \
+            tile_width, tile_height, map_width, map_height, \
+            tile_name, columns, (total_layers - 1) - layer_index, \
+            asset_manager);
+            xml_layer = xml_layer->NextSiblingElement("layer");
+
+            layer_index++;
+        }
+    }
+}
+
+SDL_RendererFlip SceneLoader::getFlip(bool flip_d, bool flip_h, bool flip_v) {
+    if (!flip_d && !flip_h && !flip_v) return SDL_FLIP_NONE;
+    if (!flip_d &&  flip_h && !flip_v) return SDL_FLIP_HORIZONTAL;
+    if (!flip_d && !flip_h &&  flip_v) return SDL_FLIP_VERTICAL;
+    if (!flip_d &&  flip_h &&  flip_v) return SDL_FLIP_NONE;
+    if ( flip_d && !flip_h && !flip_v) return SDL_FLIP_VERTICAL;
+    if ( flip_d &&  flip_h && !flip_v) return SDL_FLIP_NONE;
+    if ( flip_d && !flip_h &&  flip_v) return SDL_FLIP_NONE;
+    if ( flip_d &&  flip_h &&  flip_v) return SDL_FLIP_VERTICAL;
+    return SDL_FLIP_NONE;
+}
+
+double SceneLoader::getAngle(bool flip_d, bool flip_h, bool flip_v) {
+    if (!flip_d && !flip_h && !flip_v) return 0;
+    if (!flip_d &&  flip_h && !flip_v) return 0;
+    if (!flip_d && !flip_h &&  flip_v) return 0;
+    if (!flip_d &&  flip_h &&  flip_v) return 180;
+    if ( flip_d && !flip_h && !flip_v) return 90;
+    if ( flip_d &&  flip_h && !flip_v) return 90;
+    if ( flip_d && !flip_h &&  flip_v) return 270;
+    if ( flip_d &&  flip_h &&  flip_v) return 270;
+    return 0;
+}
+
+void SceneLoader::renderTile(SDL_Renderer* renderer, SDL_Texture* tileset_texture, \
+    uint32_t tile_id, \
+    bool flip_h, bool flip_v, bool flip_d, \
+    int tile_number, \
+    int tile_width, int tile_height, \
+    int map_width, int columns) {
+
+    double angle = getAngle(flip_d, flip_h, flip_v);
+    SDL_RendererFlip flip = getFlip(flip_d, flip_h, flip_v);
+
+    SDL_Rect src = {
+        ((static_cast<int>(tile_id - 1)) % columns) * tile_width,
+        ((static_cast<int>(tile_id - 1)) / columns) * tile_height,
+        tile_width,
+        tile_height
+    };
+
+    SDL_Rect dst = {
+        (tile_number % map_width) * tile_width,
+        (tile_number / map_width) * tile_height,
+        tile_width,
+        tile_height
+    };
+
+    SDL_RenderCopyEx(renderer, tileset_texture, &src, &dst, angle, nullptr, flip);
+}
+
+void SceneLoader::processTile(SDL_Renderer* renderer, SDL_Texture* tileset_texture, \
+    const std::string& number_str, \
+    int tile_number, int tile_width, int tile_height, \
+    int map_width, int columns) {
+
+    if (number_str.empty()) {
+        return;
+    }
+
+    const uint32_t FLIPPED_HORIZONTALLY_FLAG = 0x80000000;
+    const uint32_t FLIPPED_VERTICALLY_FLAG   = 0x40000000;
+    const uint32_t FLIPPED_DIAGONALLY_FLAG   = 0x20000000;
+    const uint32_t FLIP_MASK = ~(FLIPPED_HORIZONTALLY_FLAG | FLIPPED_VERTICALLY_FLAG | FLIPPED_DIAGONALLY_FLAG);
+
+    uint32_t raw_id  = static_cast<uint32_t>(std::stoull(number_str) & 0xFFFFFFFF);
+    uint32_t tile_id = raw_id & FLIP_MASK;
+
+    if (tile_id == 0) {
+        return;
+    };
+
+    bool flip_h = (raw_id & FLIPPED_HORIZONTALLY_FLAG) != 0;
+    bool flip_v = (raw_id & FLIPPED_VERTICALLY_FLAG)   != 0;
+    bool flip_d = (raw_id & FLIPPED_DIAGONALLY_FLAG)   != 0;
+
+    renderTile(renderer, tileset_texture, tile_id, \
+        flip_h, flip_v, flip_d, \
+        tile_number, \
+        tile_width, tile_height, \
+        map_width, columns);
+}
+
+SDL_Texture* SceneLoader::bakeLayer(SDL_Renderer* renderer, const char* data, \
+    SDL_Texture* tileset_texture, \
+    int tile_width, int tile_height, \
+    int map_width, int map_height, int columns) {
+
+    SDL_Texture* baked_texture = SDL_CreateTexture(
+        renderer,
+        SDL_PIXELFORMAT_RGBA8888,
+        SDL_TEXTUREACCESS_TARGET,
+        map_width * tile_width,
+        map_height * tile_height
+    );
+
+    if (!baked_texture) {
+        std::cout << "[MAP] Failed to create texture: " << SDL_GetError() << std::endl;
+        return nullptr;
+    }
+    
+    if (SDL_SetRenderTarget(renderer, baked_texture) != 0) {
+        std::cout << "[MAP] Failed to set render target: " << SDL_GetError() << std::endl;
+        return nullptr;
+    }
+
+    SDL_SetTextureBlendMode(baked_texture, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+    SDL_RenderClear(renderer);
+
+    std::stringstream temp_number;
+    int pos = 0;
+    int tile_number = 0;
+
+    while (true) {
+        if (data[pos] == '\0') {
+            if (!temp_number.str().empty()) {
+                processTile(renderer, tileset_texture, temp_number.str(),
+                    tile_number, tile_width, tile_height, map_width, columns);
+            }
+            break;
+        }
+        if (isdigit(data[pos])) {
+            temp_number << data[pos];
+        } else if (!temp_number.str().empty()) {
+            processTile(renderer, tileset_texture, temp_number.str(),
+                tile_number, tile_width, tile_height, map_width, columns);
+            tile_number++;
+            temp_number.str("");
+            temp_number.clear();
+        }
+        pos++;
+    }
+
+    SDL_SetRenderTarget(renderer, nullptr);
+    return baked_texture;
+}
+
+void SceneLoader::loadLayer(
+    SDL_Renderer* renderer, std::unique_ptr<Registry>& registry, \
+    tinyxml2::XMLElement* layer, \
+    int tile_width, int tile_height, \
+    int map_width, int map_height, \
+    const std::string& tileset, int columns, int z_index, \
+    std::unique_ptr<AssetManager>& asset_manager) {
+
+    const char* data = layer->FirstChildElement("data")->GetText();
+
+    SDL_Texture* baked_texture = bakeLayer(
+        renderer, data,
+        asset_manager->getTexture(tileset),
+        tile_width, tile_height,
+        map_width, map_height,
+        columns
+    );
+
+    if (!baked_texture) {
+        return;
+    }
+
+    Entity layer_entity = registry->createEntity();
+    layer_entity.addComponent<TileMapComponent>(
+        baked_texture,
+        map_width * tile_width,
+        map_height * tile_height
+    );
+    layer_entity.addComponent<LayerComponent>(z_index);
+}
+
 void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, \
     std::unique_ptr<Registry>& registry) {
     int index = 0;
@@ -353,7 +603,6 @@ void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, \
 
             loadText(new_entity, components);
             loadTag(new_entity, components);
-            //loadButton(new_entity, components);
             loadClickable(new_entity, components);
             loadAnimation(new_entity, components);
             loadCursor(new_entity, components);
@@ -364,10 +613,10 @@ void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, \
             loadCameraFollow(new_entity, components);
             loadTransform(new_entity, components);
             loadScript(lua, new_entity, components);
+            
         }
 
         index++;
     }
 }
 
-// Video #4 Deteccion colision

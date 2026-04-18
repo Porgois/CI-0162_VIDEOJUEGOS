@@ -21,6 +21,12 @@ scene = {
         {name = "LMB", button = 1}
     },
 
+    -- Map table
+    maps = {
+        width = 800,
+        height = 600
+    },
+
     -- Entity table
     entities = {
         [0] = 

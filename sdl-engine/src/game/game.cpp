@@ -14,6 +14,7 @@
 #include "../systems/boxCollisionSystem.hpp"
 #include "../systems/movementSystem.hpp"
 #include "../systems/renderSystem.hpp"
+#include "../systems/tileRenderSystem.hpp"
 //#include "../systems/damageSystem.hpp"
 #include "../systems/uISystem.hpp"
 #include "../systems/cameraMovementSystem.hpp"
@@ -59,9 +60,8 @@ void Game::init() {
         return;
     }
 
-    // Setup map values
-    map_height = 2000;
-    map_width = 2000;
+    // Texture filtering
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 
     // Create the game window
     window = SDL_CreateWindow(
@@ -107,6 +107,7 @@ void Game::setup() {
     registry->addSystem<CursorSystem>();
     registry->addSystem<AnimationSystem>();
     registry->addSystem<CameraMovementSystem>();
+    registry->addSystem<TileRenderSystem>();
     registry->addSystem<RenderSystem>();
     registry->addSystem<MovementSystem>();
     registry->addSystem<CircleCollisionSystem>();
@@ -195,11 +196,10 @@ void Game::update() {
 
     registry->update();
     registry->getSystem<ScriptSystem>().update(lua);
-    
-    registry->getSystem<FlipSystem>().update(camera);
+    registry->getSystem<FlipSystem>().update(camera, zoom_level);
     registry->getSystem<AnimationSystem>().update();
     registry->getSystem<MovementSystem>().update(delta_time);
-    registry->getSystem<CameraMovementSystem>().update(camera);
+    registry->getSystem<CameraMovementSystem>().update(camera, zoom_level);
     registry->getSystem<BoxCollisionSystem>().update(lua);
     registry->getSystem<CircleCollisionSystem>().update(event_manager);
 }
@@ -209,7 +209,8 @@ void Game::render() {
     SDL_SetRenderDrawColor(renderer, 117, 167, 67, 255); // greenish background
     SDL_RenderClear(renderer);
     
-    registry->getSystem<RenderSystem>().update(renderer, asset_manager, camera);
+    registry->getSystem<TileRenderSystem>().update(renderer, camera, zoom_level);
+    registry->getSystem<RenderSystem>().update(renderer, asset_manager, camera, zoom_level);
     //registry->getSystem<FlashlightRenderSystem>().update(renderer, asset_manager);
     registry->getSystem<TextRenderSystem>().update(renderer, asset_manager);
     registry->getSystem<CursorSystem>().update(renderer, asset_manager);

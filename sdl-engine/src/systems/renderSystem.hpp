@@ -10,6 +10,7 @@
 
 class RenderSystem : public System {
     public:
+   
         RenderSystem() {
             // Requires both a sprite and a transform
             requireComponent<SpriteComponent>();
@@ -34,7 +35,8 @@ class RenderSystem : public System {
             }); 
         }
 
-        void update(SDL_Renderer* renderer, std::unique_ptr<AssetManager>& asset_manager, SDL_Rect& camera) {
+        void update(SDL_Renderer* renderer, std::unique_ptr<AssetManager>& asset_manager, SDL_Rect& camera, float zoom_level) {
+            
             auto entities = getSystemEntities();
 
             //sort by y position before render
@@ -48,10 +50,10 @@ class RenderSystem : public System {
 
                 // Create rendered element
                 SDL_Rect dstRect = {
-                    static_cast<int>(transform.position.x - camera.x), // x adjust for camera follow
-                    static_cast<int>(transform.position.y - camera.y), // y adjust for camera follow
-                    static_cast<int>(sprite.width * transform.scale.x),
-                    static_cast<int>(sprite.height * transform.scale.y)
+                    static_cast<int>((transform.position.x * zoom_level) - camera.x), // x adjust for camera follow
+                    static_cast<int>((transform.position.y * zoom_level) - camera.y) , // y adjust for camera follow
+                    static_cast<int>(sprite.width * transform.scale.x * zoom_level),
+                    static_cast<int>(sprite.height * transform.scale.y * zoom_level)
                 };
 
                 SDL_RendererFlip flip = sprite.flip;

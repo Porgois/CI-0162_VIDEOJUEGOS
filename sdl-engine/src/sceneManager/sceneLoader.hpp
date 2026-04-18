@@ -2,6 +2,7 @@
 #define SCENE_LOADER_HPP
 
 #include <SDL2/SDL.h>
+#include <tinyxml2/tinyxml2.h>
 #include <memory>
 #include <sol/sol.hpp>
 #include <string>
@@ -52,6 +53,34 @@ class SceneLoader {
         void loadClickable(Entity& entity, const sol::table& components);
 
         void loadCameraFollow(Entity& entity, const sol::table& components);
+        
+        SDL_RendererFlip getFlip(bool flip_d, bool flip_h, bool flip_v);
+
+        double getAngle(bool flip_d, bool flip_h, bool flip_v);
+
+        void renderTile(SDL_Renderer* renderer, SDL_Texture* tileset_texture, uint32_t tile_id,
+        bool flip_h, bool flip_v, bool flip_d,
+        int tile_number, int tile_width, int tile_height,
+        int map_width, int columns);
+
+        void processTile(SDL_Renderer* renderer, SDL_Texture* tileset_texture, \
+        const std::string& number_str, \
+        int tile_number, int tile_width, int tile_height, \
+        int map_width, int columns);
+
+        SDL_Texture* bakeLayer(SDL_Renderer* renderer, const char* data, SDL_Texture* tileset_texture, \
+        int tile_width, int tile_height, \
+        int map_width, int map_height, \
+        int columns);
+
+        void loadMap(SDL_Renderer* renderer, const sol::table map, std::unique_ptr<Registry>& registry, \
+            std::unique_ptr<AssetManager>& asset_manager);
+
+        void loadLayer(SDL_Renderer* renderer, std::unique_ptr<Registry>& registry, \
+            tinyxml2::XMLElement* layer, int tile_width, int tile_height, \
+            int map_width, int map_height, \
+            const std::string& tileset, int columns, int z_index, \
+            std::unique_ptr<AssetManager>& asset_manager);
 
         void loadButton();
 
