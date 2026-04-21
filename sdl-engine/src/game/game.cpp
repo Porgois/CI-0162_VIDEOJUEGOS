@@ -206,11 +206,11 @@ void Game::update() {
 
 // Renders the screen contents
 void Game::render() {
-    SDL_SetRenderDrawColor(renderer, 117, 167, 67, 255); // greenish background
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderClear(renderer);
-    
-    registry->getSystem<TileRenderSystem>().update(renderer, camera, zoom_level);
-    registry->getSystem<RenderSystem>().update(renderer, asset_manager, camera, zoom_level);
+
+    auto tile_entities = registry->getSystem<TileRenderSystem>().getEntities();
+    registry->getSystem<RenderSystem>().update(renderer, asset_manager, camera, zoom_level, tile_entities);
     //registry->getSystem<FlashlightRenderSystem>().update(renderer, asset_manager);
     registry->getSystem<TextRenderSystem>().update(renderer, asset_manager);
     registry->getSystem<CursorSystem>().update(renderer, asset_manager);

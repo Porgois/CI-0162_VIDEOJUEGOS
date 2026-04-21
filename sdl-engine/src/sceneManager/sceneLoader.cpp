@@ -390,23 +390,17 @@ void SceneLoader::loadMap(SDL_Renderer* renderer, const sol::table map, std::uni
         int columns;
         xml_tileset_root->QueryIntAttribute("columns", &columns);
 
-        // Count layers
-        int total_layers = 0;
-        tinyxml2::XMLElement* count_layer = xml_root->FirstChildElement("layer");
-        while (count_layer != nullptr) {
-            total_layers++;
-            count_layer = count_layer->NextSiblingElement("layer");
-        }
-
         // Get the first element of 'layer' type
         tinyxml2::XMLElement* xml_layer = xml_root->FirstChildElement("layer");
         int layer_index = 0;
         while (xml_layer != nullptr) {
-            loadLayer(renderer, registry, xml_layer, \
-            tile_width, tile_height, map_width, map_height, \
-            tile_name, columns, (total_layers - 1) - layer_index, \
+            loadLayer(renderer, registry, xml_layer,
+            tile_width, tile_height, map_width, map_height,
+            tile_name, columns, layer_index,
             asset_manager);
+            std::cout << "[LAYER NAME]: " << xml_layer->Attribute("name") << " [LAYER INDEX]: " << layer_index << ".\n";
             xml_layer = xml_layer->NextSiblingElement("layer");
+            
 
             layer_index++;
         }
@@ -520,6 +514,7 @@ SDL_Texture* SceneLoader::bakeLayer(SDL_Renderer* renderer, const char* data, \
     }
 
     SDL_SetTextureBlendMode(baked_texture, SDL_BLENDMODE_BLEND);
+    SDL_SetTextureBlendMode(tileset_texture, SDL_BLENDMODE_BLEND);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
     SDL_RenderClear(renderer);
 

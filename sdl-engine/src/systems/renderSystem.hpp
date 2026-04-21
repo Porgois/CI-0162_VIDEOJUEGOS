@@ -1,75 +1,84 @@
 #ifndef RENDER_SYSTEM_HPP
 #define RENDER_SYSTEM_HPP
-
 #include <SDL2/SDL.h>
-
 #include "../assetManager/assetManager.hpp"
 #include "../components/spriteComponent.hpp"
 #include "../components/transformComponent.hpp"
+#include "../components/tileMapComponent.hpp"
+#include "../components/layerComponent.hpp"
 #include "../e.c.s./ecs.hpp"
 
 class RenderSystem : public System {
-    public:
-   
-        RenderSystem() {
-            // Requires both a sprite and a transform
-            requireComponent<SpriteComponent>();
-            requireComponent<TransformComponent>();
+public:
+    RenderSystem() {
+        requireComponent<SpriteComponent>();
+        requireComponent<TransformComponent>();
+    }
+
+    void update(SDL_Renderer* renderer, std::unique_ptr<AssetManager>& asset_manager,
+                SDL_Rect& camera, float zoom_level,
+                std::vector<Entity>& tile_entities) {
+
+        struct RenderItem {
+            int z_index;
+            bool is_tile;
+            Entity entity;
+        };
+
+        std::vector<RenderItem> queue;
+
+        for (auto& e : tile_entities) {
+            queue.push_back({ e.getComponent<LayerComponent>().z_index, true, e });
         }
 
-        void ySort(std::vector<Entity>& entities) {
-            std::sort(entities.begin(), entities.end(), [](Entity a, Entity b) {
-                auto& a_transform = a.getComponent<TransformComponent>();
-                auto& b_transform = b.getComponent<TransformComponent>();
-                auto& a_sprite = a.getComponent<SpriteComponent>();
-                auto& b_sprite = b.getComponent<SpriteComponent>();
-
-                float a_base = a_transform.position.y + (a_sprite.height * a_transform.scale.y);
-                float b_base = b_transform.position.y + (b_sprite.height * b_transform.scale.y);
-                
-                if (a_sprite.z_index != b_sprite.z_index) { // take z_index into account when sorting
-                    return a_sprite.z_index < b_sprite.z_index;
-                }
-
-                return a_base < b_base;
-            }); 
+        for (auto& e : getSystemEntities()) {
+            queue.push_back({ e.getComponent<SpriteComponent>().z_index, false, e });
         }
 
-        void update(SDL_Renderer* renderer, std::unique_ptr<AssetManager>& asset_manager, SDL_Rect& camera, float zoom_level) {
-            
-            auto entities = getSystemEntities();
+        std::sort(queue.begin(), queue.end(), [](const RenderItem& a, const RenderItem& b) {
+            if (a.z_index != b.z_index) {
+                return a.z_index < b.z_index;
+            }
 
-            //sort by y position before render
-            ySort(entities);
+            if (!a.is_tile && !b.is_tile) {
+                auto& a_transform = a.entity.getComponent<TransformComponent>();
+                auto& b_transform = b.entity.getComponent<TransformComponent>();
+                auto& a_sprite = a.entity.getComponent<SpriteComponent>();
+                auto& b_sprite = b.entity.getComponent<SpriteComponent>();
 
-            for (auto entity : entities) {
-                const auto& sprite = entity.getComponent<SpriteComponent>();
-                const auto& transform = entity.getComponent<TransformComponent>();
+                return (a_transform.position.y + a_sprite.height * a_transform.scale.y) < \
+                        (b_transform.position.y + b_sprite.height * b_transform.scale.y);
+            }
+            return a.is_tile;
+        });
 
+        for (auto& item : queue) {
+            if (item.is_tile) {
+                const auto& tile_map = item.entity.getComponent<TileMapComponent>();
+                SDL_SetTextureBlendMode(tile_map.baked_texture, SDL_BLENDMODE_BLEND); // add this
+                SDL_Rect src = { 0, 0, tile_map.width, tile_map.height };
+                SDL_Rect dst = {
+                    static_cast<int>(-camera.x),
+                    static_cast<int>(-camera.y),
+                    static_cast<int>(tile_map.width  * zoom_level),
+                    static_cast<int>(tile_map.height * zoom_level)
+                };
+                SDL_RenderCopy(renderer, tile_map.baked_texture, &src, &dst);
+            } else {
+                const auto& sprite = item.entity.getComponent<SpriteComponent>();
+                const auto& transform = item.entity.getComponent<TransformComponent>();
                 SDL_Rect srcRect = sprite.srcRect;
-
-                // Create rendered element
                 SDL_Rect dstRect = {
-                    static_cast<int>((transform.position.x * zoom_level) - camera.x), // x adjust for camera follow
-                    static_cast<int>((transform.position.y * zoom_level) - camera.y) , // y adjust for camera follow
-                    static_cast<int>(sprite.width * transform.scale.x * zoom_level),
+                    static_cast<int>((transform.position.x * zoom_level) - camera.x),
+                    static_cast<int>((transform.position.y * zoom_level) - camera.y),
+                    static_cast<int>(sprite.width  * transform.scale.x * zoom_level),
                     static_cast<int>(sprite.height * transform.scale.y * zoom_level)
                 };
-
-                SDL_RendererFlip flip = sprite.flip;
                 SDL_Point center = { dstRect.w / 2, dstRect.h / 2 };
-
-                SDL_RenderCopyEx(
-                    renderer,
-                    asset_manager->getTexture(sprite.textureId),
-                    &srcRect,
-                    &dstRect,
-                    transform.rotation,
-                    &center,
-                    flip
-                );
+                SDL_RenderCopyEx(renderer, asset_manager->getTexture(sprite.textureId),
+                    &srcRect, &dstRect, transform.rotation, &center, sprite.flip);
             }
         }
+    }
 };
-
-#endif // RENDER_SYSTEM_HPP
+#endif
