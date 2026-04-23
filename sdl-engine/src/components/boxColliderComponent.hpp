@@ -15,16 +15,6 @@ struct BoxColliderComponent {
         this->height = height;
         this->offset = offset;
     }
-
-    glm::vec2 getMin(const TransformComponent& transform) const {
-        return glm::vec2(transform.position.x + offset.x * transform.scale.x, \
-            transform.position.y + offset.y * transform.scale.y);
-    }
-
-    glm::vec2 getMax(const TransformComponent& transform) const {
-        return glm::vec2(transform.position.x + (offset.x + width) * transform.scale.x, \
-            transform.position.y + (offset.y + height) * transform.scale.y); 
-    }
 };
 
 #endif // BOX_COLLIDER_COMPONENT_HPP

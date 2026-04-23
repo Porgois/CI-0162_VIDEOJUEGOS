@@ -28,6 +28,7 @@ class Game {
         int millisecs_previous_frame = 0;
 
         bool is_running = false;
+        bool is_debug_mode = false;
 
         void setup();
         void update();
@@ -43,7 +44,7 @@ class Game {
         int window_height = 600;
         int map_width = 0;
         int map_height = 0;
-        float zoom_level = 2.5;
+        float zoom_level = 1.0;
         SDL_Renderer* renderer = nullptr;
         std::unique_ptr<AssetManager> asset_manager;
         std::unique_ptr<EventManager> event_manager;

@@ -1,7 +1,7 @@
 #ifndef BOX_COLLISION_SYSTEM_HPP
 #define BOX_COLLISION_SYSTEM_HPP
 
-#include <iostream>
+#include <memory>
 
 #include "../e.c.s./ecs.hpp"
 #include "../eventManager/eventManager.hpp"
@@ -28,7 +28,8 @@ class BoxCollisionSystem : public System {
             requireComponent<BoxColliderComponent>();
         }
 
-        void update(sol::state& lua) {
+        void update(const std::unique_ptr<EventManager>& event_manager, \
+            sol::state& lua) {
             auto entities = getSystemEntities();
 
             for (auto i = entities.begin(); i != entities.end(); i++) {
@@ -54,6 +55,8 @@ class BoxCollisionSystem : public System {
                     );
 
                     if (collision) {
+                        event_manager->emitEvent<CollisionEvent>(a, b);
+
                         // Entity a
                         if (a.hasComponent<ScriptComponent>()) {
                             const auto& script = a.getComponent<ScriptComponent>();

@@ -1,48 +1,12 @@
 player_velocity = 60
 fixed_player_velocity = math.sqrt( (player_velocity * player_velocity) / 2)
 
-function avoid_left_overlap(other)
-    this_x, this_y = get_position(this)         
-    other_x, other_y = get_position(other)     
-    other_w, other_h = get_collider_size(other)
-    other_off_x, _ = get_collider_offset(other)
-    this_off_x, _ = get_collider_offset(this)
-
-    target_x = (other_x + other_off_x + other_w) - this_off_x
-    set_position(this, target_x, this_y)
+function on_awake()
+    print("On awake running!")
 end
-
-function avoid_right_overlap(other)
-    this_x, this_y = get_position(this)         
-    other_x, other_y = get_position(other)     
-    other_w, other_h = get_collider_size(other)
-    this_w, this_h = get_collider_size(this)
-    other_off_x, _ = get_collider_offset(other)
-    this_off_x, _ = get_collider_offset(this)
-
-    target_x = (other_x + other_off_x) - (this_off_x + this_w)
-    set_position(this, target_x, this_y)
-end
-
 
 function on_collision(other)
-    other_tag = get_tag(other)
-
-    if other_tag == "pillar" then
     
-        if left_collision(this, other) then
-            print("Player collides with left side of "..other_tag)
-            avoid_left_overlap(other)
-          
-        end
-
-        if right_collision(this, other) then
-            print("Player collides with right side of "..other_tag)
-            avoid_right_overlap(other)
-        end
-
-    end
-
 end
 
 function update()
@@ -74,10 +38,6 @@ function update()
     set_velocity(this, vel_x, vel_y)
 
     handle_animation(vel_x, vel_y)
-
-end
-
-function handle_controls()
 
 end
 

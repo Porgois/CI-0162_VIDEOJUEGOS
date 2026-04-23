@@ -12,7 +12,10 @@
 #include "../systems/flashlightRenderSystem.hpp"
 #include "../systems/circleCollisionSystem.hpp"
 #include "../systems/boxCollisionSystem.hpp"
+#include "../systems/renderBoxColliderSystem.hpp"
 #include "../systems/movementSystem.hpp"
+#include "../systems/overlapSystem.hpp"
+#include "../systems/physicsSystem.hpp"
 #include "../systems/renderSystem.hpp"
 #include "../systems/tileRenderSystem.hpp"
 //#include "../systems/damageSystem.hpp"
@@ -104,19 +107,26 @@ void Game::init() {
 void Game::setup() {
     // Add systems
     registry->addSystem<ScriptSystem>();
+
+    registry->addSystem<PhysicsSystem>();
+    registry->addSystem<MovementSystem>();
+    registry->addSystem<BoxCollisionSystem>();
+    registry->addSystem<CircleCollisionSystem>();
+    registry->addSystem<RenderBoxColliderSystem>();
+    registry->addSystem<OverlapSystem>();
+
+    registry->addSystem<TileRenderSystem>();
+    registry->addSystem<RenderSystem>();
+    registry->addSystem<FlashlightRenderSystem>(renderer, window_width, window_height);
+
     registry->addSystem<CursorSystem>();
     registry->addSystem<AnimationSystem>();
     registry->addSystem<CameraMovementSystem>();
-    registry->addSystem<TileRenderSystem>();
-    registry->addSystem<RenderSystem>();
-    registry->addSystem<MovementSystem>();
-    registry->addSystem<CircleCollisionSystem>();
-    registry->addSystem<BoxCollisionSystem>();
-    //registry->addSystem<DamageSystem>();
-    registry->addSystem<FlashlightRenderSystem>(renderer, window_width, window_height);
+
     registry->addSystem<FlipSystem>();
     registry->addSystem<TextRenderSystem>();
     registry->addSystem<UISystem>();
+    //registry->addSystem<DamageSystem>();
    
     lua.open_libraries(sol::lib::base, sol::lib::math); // libraries
     registry->getSystem<ScriptSystem>().createLuaBinding(lua); // bindings
@@ -135,14 +145,21 @@ void Game::processInput() {
                 break;
 
             case SDL_KEYDOWN:
+
                 if (sdl_event.key.keysym.sym == SDLK_ESCAPE) {
                     is_running = false;
                     scene_manager->stopScene(); // TODO: Consider changing this for a main menu scene
                     break;
                 }
+
+                if (sdl_event.key.keysym.sym == SDLK_BACKQUOTE) {
+                    is_debug_mode = !is_debug_mode;
+                    break;
+                }
+
                 controller_manager->keyDown(sdl_event.key.keysym.sym);
                 break;
-
+                
             case SDL_KEYUP:
                 controller_manager->keyUp(sdl_event.key.keysym.sym);
                 break;
@@ -192,15 +209,18 @@ void Game::update() {
     millisecs_previous_frame = SDL_GetTicks();
     event_manager->reset();
     //registry->getSystem<DamageSystem>().subscribeCollisionEvent(event_manager);
+    registry->getSystem<OverlapSystem>().subscribeCollisionEvent(event_manager);
     registry->getSystem<UISystem>().subscribeClickEvent(event_manager);
-
+    
     registry->update();
     registry->getSystem<ScriptSystem>().update(lua);
+
     registry->getSystem<FlipSystem>().update(camera, zoom_level);
     registry->getSystem<AnimationSystem>().update();
+    registry->getSystem<PhysicsSystem>().update();
     registry->getSystem<MovementSystem>().update(delta_time);
     registry->getSystem<CameraMovementSystem>().update(camera, zoom_level);
-    registry->getSystem<BoxCollisionSystem>().update(lua);
+    registry->getSystem<BoxCollisionSystem>().update(event_manager, lua);
     registry->getSystem<CircleCollisionSystem>().update(event_manager);
 }
 
@@ -211,9 +231,13 @@ void Game::render() {
 
     auto tile_entities = registry->getSystem<TileRenderSystem>().getEntities();
     registry->getSystem<RenderSystem>().update(renderer, asset_manager, camera, zoom_level, tile_entities);
-    //registry->getSystem<FlashlightRenderSystem>().update(renderer, asset_manager);
+    //registry->getSystem<FlashlightRenderSystem>().update(renderer, asset_manager, camera);
     registry->getSystem<TextRenderSystem>().update(renderer, asset_manager);
     registry->getSystem<CursorSystem>().update(renderer, asset_manager);
+
+    if (is_debug_mode) {
+        registry->getSystem<RenderBoxColliderSystem>().update(renderer, camera, zoom_level);
+    }
 
     SDL_RenderPresent(renderer);
 }

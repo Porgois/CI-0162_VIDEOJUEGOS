@@ -54,8 +54,8 @@ scene = {
                 },
                 script  = {path = "./assets/scripts/player.lua"},
                 camera_follow = {},
-                box_collider = {width = 25, height = 25, offset = {x = 2.5, y = 2.5}},
-                rigidbody = {velocity = {x = 0, y = 0}},
+                box_collider = {width = 12, height = 16, offset = {x = 9.5, y = 7.5}},
+                rigidbody = {is_dynamic = false, is_solid = true, mass = 1.0},
                 sprite = {assetId = "player", width = 30, height = 30, src_rect = {x = 0, y = 0}, z_index = 8, flip = true},
                 transform = {position = {x = 360.0, y = 160.0}, scale = {x = 1.0, y = 1.0}, rotation = 0.0}
             }

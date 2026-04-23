@@ -53,6 +53,10 @@ class SceneLoader {
         void loadClickable(Entity& entity, const sol::table& components);
 
         void loadCameraFollow(Entity& entity, const sol::table& components);
+
+        void loadColliders(std::unique_ptr<Registry>& registry, tinyxml2::XMLElement* object_group);
+
+        void loadFlashlight(Entity& entity, const sol::table& components);
         
         SDL_RendererFlip getFlip(bool flip_d, bool flip_h, bool flip_v);
 

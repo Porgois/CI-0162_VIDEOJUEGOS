@@ -53,18 +53,18 @@ public:
         });
 
         for (auto& item : queue) {
-            if (item.is_tile) {
+            if (item.is_tile) { //* TILES
                 const auto& tile_map = item.entity.getComponent<TileMapComponent>();
                 SDL_SetTextureBlendMode(tile_map.baked_texture, SDL_BLENDMODE_BLEND); // add this
                 SDL_Rect src = { 0, 0, tile_map.width, tile_map.height };
                 SDL_Rect dst = {
-                    static_cast<int>(-camera.x),
-                    static_cast<int>(-camera.y),
+                    static_cast<int>((-camera.x)),
+                    static_cast<int>((-camera.y)),
                     static_cast<int>(tile_map.width  * zoom_level),
                     static_cast<int>(tile_map.height * zoom_level)
                 };
                 SDL_RenderCopy(renderer, tile_map.baked_texture, &src, &dst);
-            } else {
+            } else { //*
                 const auto& sprite = item.entity.getComponent<SpriteComponent>();
                 const auto& transform = item.entity.getComponent<TransformComponent>();
                 SDL_Rect srcRect = sprite.srcRect;

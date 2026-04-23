@@ -166,17 +166,22 @@ void SceneLoader::loadCollider(Entity& entity, const sol::table& components) {
 
 void SceneLoader::loadBoxCollider(Entity& entity, const sol::table& components) {
     sol::optional<sol::table> has_box_collider = components["box_collider"];
+    if (has_box_collider == sol::nullopt) return;
 
-    if (has_box_collider != sol::nullopt) {
-        entity.addComponent<BoxColliderComponent> (
-            components["box_collider"]["width"],
-            components["box_collider"]["height"],
-            glm::vec2(
-                components["box_collider"]["offset"]["x"],
-                components["box_collider"]["offset"]["y"]
-            )
-        );
+    sol::table box = has_box_collider.value();
+
+    sol::optional<sol::table> has_offset = box["offset"];
+    glm::vec2 offset(0.0f, 0.0f); // default values if none are 
+    if (has_offset != sol::nullopt) {
+        offset.x = has_offset.value()["x"].get_or(0.0f);
+        offset.y = has_offset.value()["y"].get_or(0.0f);
     }
+
+    entity.addComponent<BoxColliderComponent>(
+        box["width"].get_or(0),
+        box["height"].get_or(0),
+        offset
+    );
 }
 
 void SceneLoader::loadCircleCollider(Entity& entity, const sol::table& components) {
@@ -196,10 +201,9 @@ void SceneLoader::loadRigidbody(Entity& entity, const sol::table& components) {
 
     if (has_rigidbody != sol::nullopt) {
         entity.addComponent<RigidBodyComponent>( 
-            glm::vec2(
-                components["rigidbody"]["velocity"]["x"],
-                components["rigidbody"]["velocity"]["y"]
-            )
+            components["rigidbody"]["is_dynamic"],
+            components["rigidbody"]["is_solid"],
+            components["rigidbody"]["mass"]
         );
     }
 }
@@ -208,12 +212,22 @@ void SceneLoader::loadScript(sol::state& lua, Entity& entity, const sol::table& 
     sol::optional<sol::table> has_script = components["script"];
 
     if (has_script != sol::nullopt) {
+        lua["on_awake"] = sol::nil;
         lua["on_click"] = sol::nil;
         lua["update"] = sol::nil;
         lua["on_collision"] = sol::nil;
    
         std::string script_path = components["script"]["path"];
         lua.script_file(script_path);
+
+        // On awake
+        sol::optional<sol::function> has_on_awake = lua["on_awake"];
+
+        if (has_on_awake != sol::nullopt) {
+            lua["this"] = entity;
+            sol::function on_awake = lua["on_awake"];
+            on_awake();
+        }
 
         // On click
         sol::optional<sol::function> has_on_click = lua["on_click"];
@@ -340,7 +354,53 @@ void SceneLoader::loadCameraFollow(Entity& entity, const sol::table& components)
     }
 }
 
-//* Map
+void SceneLoader::loadFlashlight(Entity& entity, const sol::table& components) {
+    sol::optional<sol::table> has_flashlight = components["flashlight"];
+
+    if (has_flashlight != sol::nullopt) {
+        entity.addComponent<FlashlightComponent>();
+    }
+}
+
+void SceneLoader::loadColliders(std::unique_ptr<Registry>& registry, tinyxml2::XMLElement* object_group) {
+    // Load first collider
+    tinyxml2::XMLElement* object = object_group->FirstChildElement("object");
+
+    while (object != nullptr) {
+        const char* name;
+        std::string tag;
+        float x, y, w, h;
+
+        // Get object's tag
+        object->QueryStringAttribute("name", &name);
+        tag = name;
+
+        // Get object's pos
+        object->QueryFloatAttribute("x", &x);
+        object->QueryFloatAttribute("y", &y);
+
+        // Width and height
+        object->QueryFloatAttribute("width", &w);
+        object->QueryFloatAttribute("height", &h);
+
+        std::cout << "[COLLIDER] x=" << x << " y=" << y 
+                  << " w=" << w << " h=" << h << std::endl;
+
+        // Create entity
+        Entity collider =  registry->createEntity();
+        collider.addComponent<TagComponent>(tag);
+        collider.addComponent<TransformComponent>(glm::vec2(x, y));
+        collider.addComponent<BoxColliderComponent>(
+            static_cast<int>(w),
+            static_cast<int>(h)
+        );
+        collider.addComponent<RigidBodyComponent>(false, true, 999.0f); // Ummovable
+
+        object = object->NextSiblingElement("object");
+    }
+}
+
+//* ----------TILES----------
 void SceneLoader::loadMap(SDL_Renderer* renderer, const sol::table map, std::unique_ptr<Registry>& registry, \
     std::unique_ptr<AssetManager>& asset_manager) {
     sol::optional<int> has_width = map["width"];
@@ -398,11 +458,32 @@ void SceneLoader::loadMap(SDL_Renderer* renderer, const sol::table map, std::uni
             tile_width, tile_height, map_width, map_height,
             tile_name, columns, layer_index,
             asset_manager);
-            std::cout << "[LAYER NAME]: " << xml_layer->Attribute("name") << " [LAYER INDEX]: " << layer_index << ".\n";
+
+            std::cout << "[LAYER NAME]: " << xml_layer->Attribute("name") << \
+                " [LAYER INDEX]: " << layer_index << ".\n";
+
             xml_layer = xml_layer->NextSiblingElement("layer");
             
-
             layer_index++;
+        }
+
+        // Load level colliders 
+   
+        tinyxml2::XMLElement* xml_object_group = xml_root->FirstChildElement("objectgroup");
+
+        while (xml_object_group != nullptr) { // TODO: CONSIDER LOADING OTHER OBJECTS IN THE FUTURE
+            const char* object_group_name;
+            std::string name;
+            xml_object_group->QueryStringAttribute("name", &object_group_name);
+            name = object_group_name;
+            
+            if (name.compare("Colliders") == 0) { // Theyre the same
+                loadColliders(registry, xml_object_group);
+            }
+
+            // TODO: I could load more object types later on
+
+            xml_object_group = xml_object_group->NextSiblingElement("objectgroup");
         }
     }
 }
@@ -576,6 +657,7 @@ void SceneLoader::loadLayer(
     );
     layer_entity.addComponent<LayerComponent>(z_index);
 }
+//*----------TILES----------
 
 void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, \
     std::unique_ptr<Registry>& registry) {
@@ -607,6 +689,7 @@ void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, \
             loadSprite(new_entity, components);
             loadCameraFollow(new_entity, components);
             loadTransform(new_entity, components);
+            loadFlashlight(new_entity, components);
             loadScript(lua, new_entity, components);
             
         }
