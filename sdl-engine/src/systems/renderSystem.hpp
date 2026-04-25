@@ -68,15 +68,34 @@ public:
                 const auto& sprite = item.entity.getComponent<SpriteComponent>();
                 const auto& transform = item.entity.getComponent<TransformComponent>();
                 SDL_Rect srcRect = sprite.srcRect;
+                int pivot_offset_x;
+                int pivot_offset_y;
+                SDL_Point center;
+
+                if (sprite.pivot.x == 0 && sprite.pivot.y == 0) {
+                    // Default behavior — rotate around sprite center
+                    int w = static_cast<int>(sprite.width  * transform.scale.x * zoom_level);
+                    int h = static_cast<int>(sprite.height * transform.scale.y * zoom_level);
+                    center = { w / 2, h / 2 };
+                    pivot_offset_x = 0;
+                    pivot_offset_y = 0;
+                } else {
+                    // Custom pivot — offset dstRect so pivot sits at transform.position
+                    pivot_offset_x = (sprite.flip == SDL_FLIP_HORIZONTAL)
+                        ? static_cast<int>((sprite.width - sprite.pivot.x) * transform.scale.x * zoom_level)
+                        : static_cast<int>(sprite.pivot.x * transform.scale.x * zoom_level);
+                    pivot_offset_y = static_cast<int>(sprite.pivot.y * transform.scale.y * zoom_level);
+                    center = { pivot_offset_x, pivot_offset_y };
+                }
+
                 SDL_Rect dstRect = {
-                    static_cast<int>((transform.position.x * zoom_level) - camera.x),
-                    static_cast<int>((transform.position.y * zoom_level) - camera.y),
+                    static_cast<int>((transform.position.x * zoom_level) - camera.x) - pivot_offset_x,
+                    static_cast<int>((transform.position.y * zoom_level) - camera.y) - pivot_offset_y,
                     static_cast<int>(sprite.width  * transform.scale.x * zoom_level),
                     static_cast<int>(sprite.height * transform.scale.y * zoom_level)
                 };
-                SDL_Point center = { dstRect.w / 2, dstRect.h / 2 };
-                SDL_RenderCopyEx(renderer, asset_manager->getTexture(sprite.textureId),
-                    &srcRect, &dstRect, transform.rotation, &center, sprite.flip);
+                                SDL_RenderCopyEx(renderer, asset_manager->getTexture(sprite.textureId),
+                &srcRect, &dstRect, transform.rotation, &center, sprite.flip);
             }
         }
     }

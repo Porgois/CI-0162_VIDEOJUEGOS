@@ -19,6 +19,8 @@
 #include "../components/textComponent.hpp"
 #include "../components/clickableComponent.hpp"
 #include "../components/cameraFollowComponent.hpp"
+#include "../components/mouseFollowComponent.hpp"
+#include "../components/childOfComponent.hpp"
 #include "../components/tagComponent.hpp"
 #include "../components/tileMapComponent.hpp"
 #include "../components/layerComponent.hpp"
@@ -259,8 +261,13 @@ void SceneLoader::loadScript(sol::state& lua, Entity& entity, const sol::table& 
 
 void SceneLoader::loadSprite(Entity& entity, const sol::table& components) {
     sol::optional<sol::table> has_sprite = components["sprite"];
-
+    
     if (has_sprite != sol::nullopt) {
+        SDL_Point pivot = {
+            components["sprite"]["pivot"]["x"].get_or(0),
+            components["sprite"]["pivot"]["y"].get_or(0)
+        };
+
         entity.addComponent<SpriteComponent>( 
             components["sprite"]["assetId"],
             components["sprite"]["width"],
@@ -268,6 +275,7 @@ void SceneLoader::loadSprite(Entity& entity, const sol::table& components) {
             components["sprite"]["src_rect"]["x"],
             components["sprite"]["src_rect"]["y"],
             components["sprite"]["z_index"].get_or(0), // 0 default
+            pivot,
             components["sprite"]["flip"]
         );
     }
@@ -354,6 +362,19 @@ void SceneLoader::loadCameraFollow(Entity& entity, const sol::table& components)
     }
 }
 
+void SceneLoader::loadMouseFollow(Entity& entity, const sol::table& components) {
+    sol::optional<sol::table> has_mouse_follow = components["mouse_follow"];
+
+    if (has_mouse_follow != sol::nullopt) {
+        SDL_Point origin_pivot = {
+            components["mouse_follow"]["origin_pivot"]["x"].get_or(0), // 0 defualt
+            components["mouse_follow"]["origin_pivot"]["y"].get_or(0) // 0 default
+        };
+        
+        entity.addComponent<MouseFollowComponent>(origin_pivot);
+    }
+}
+
 void SceneLoader::loadFlashlight(Entity& entity, const sol::table& components) {
     sol::optional<sol::table> has_flashlight = components["flashlight"];
 
@@ -398,6 +419,31 @@ void SceneLoader::loadColliders(std::unique_ptr<Registry>& registry, tinyxml2::X
 
         object = object->NextSiblingElement("object");
     }
+}
+
+void SceneLoader::loadChildOf(Entity& entity, const sol::table& components,
+    const std::unordered_map<std::string, Entity>& named_entities) {
+
+    sol::optional<sol::table> has_child_of = components["child_of"];
+    if (has_child_of == sol::nullopt) {
+        return;
+    }
+
+    std::string parent_name = components["child_of"]["parent"];
+
+    auto named_entity = named_entities.find(parent_name);
+    if (named_entity == named_entities.end()) {
+        std::cerr << "[CHILD OF] Could not find parent entity named '" << parent_name << "'!\n";
+        return;
+    }
+
+    entity.addComponent<ChildOfComponent>(
+        named_entity->second,
+        glm::vec2(
+            components["child_of"]["offset"]["x"],
+            components["child_of"]["offset"]["y"]
+        )
+    );
 }
 
 //* ----------TILES----------
@@ -661,20 +707,27 @@ void SceneLoader::loadLayer(
 
 void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, \
     std::unique_ptr<Registry>& registry) {
+    std::unordered_map<std::string, Entity> named_entities;
     int index = 0;
+
     while (true) {
         sol::optional<sol::table> has_entity = entities[index];
 
-        if (has_entity == sol::nullopt) { // nothing
+        if (has_entity == sol::nullopt) { // no entity
             break;
         }
 
         sol::table entity = entities[index];
-        
         Entity new_entity = registry->createEntity();
 
-        sol::optional<sol::table> has_components = entity["components"];
+        // Store name
+        sol::optional<std::string> has_name = entity["name"];
+        if (has_name != sol::nullopt) { // entity has a name field
+            named_entities.emplace(has_name.value(), new_entity);
+        }
 
+
+        sol::optional<sol::table> has_components = entity["components"];
         if (has_components != sol::nullopt) {
             sol::table components = entity["components"];
 
@@ -688,12 +741,32 @@ void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, \
             loadRigidbody(new_entity, components);
             loadSprite(new_entity, components);
             loadCameraFollow(new_entity, components);
+            loadMouseFollow(new_entity, components);
             loadTransform(new_entity, components);
             loadFlashlight(new_entity, components);
             loadScript(lua, new_entity, components);
-            
         }
 
+        index++;
+    }
+
+    // Handle childOf component
+    index = 0;
+    while (true) {
+        sol::optional<sol::table> has_entity = entities[index];
+        if (has_entity == sol::nullopt) {
+            break;
+        }
+
+        sol::table entity = entities[index];
+        sol::optional<std::string> has_name = entity["name"];
+
+        if (has_name != sol::nullopt) {
+            sol::optional<sol::table> has_components = entity["components"];
+            if (has_components != sol::nullopt) {
+                loadChildOf(named_entities.at(has_name.value()), entity["components"], named_entities);
+            }
+        }
         index++;
     }
 }

@@ -14,10 +14,12 @@
 #include "../systems/boxCollisionSystem.hpp"
 #include "../systems/renderBoxColliderSystem.hpp"
 #include "../systems/movementSystem.hpp"
+#include "../systems/childOfSystem.hpp"
 #include "../systems/overlapSystem.hpp"
 #include "../systems/physicsSystem.hpp"
 #include "../systems/renderSystem.hpp"
 #include "../systems/tileRenderSystem.hpp"
+#include "../systems/mouseFollowSystem.hpp"
 //#include "../systems/damageSystem.hpp"
 #include "../systems/uISystem.hpp"
 #include "../systems/cameraMovementSystem.hpp"
@@ -110,6 +112,7 @@ void Game::setup() {
 
     registry->addSystem<PhysicsSystem>();
     registry->addSystem<MovementSystem>();
+    registry->addSystem<ChildOfSystem>();
     registry->addSystem<BoxCollisionSystem>();
     registry->addSystem<CircleCollisionSystem>();
     registry->addSystem<RenderBoxColliderSystem>();
@@ -122,6 +125,7 @@ void Game::setup() {
     registry->addSystem<CursorSystem>();
     registry->addSystem<AnimationSystem>();
     registry->addSystem<CameraMovementSystem>();
+    registry->addSystem<MouseFollowSystem>();
 
     registry->addSystem<FlipSystem>();
     registry->addSystem<TextRenderSystem>();
@@ -219,7 +223,9 @@ void Game::update() {
     registry->getSystem<AnimationSystem>().update();
     registry->getSystem<PhysicsSystem>().update();
     registry->getSystem<MovementSystem>().update(delta_time);
+    registry->getSystem<ChildOfSystem>().update();
     registry->getSystem<CameraMovementSystem>().update(camera, zoom_level);
+    registry->getSystem<MouseFollowSystem>().update(camera, zoom_level);
     registry->getSystem<BoxCollisionSystem>().update(event_manager, lua);
     registry->getSystem<CircleCollisionSystem>().update(event_manager);
 }

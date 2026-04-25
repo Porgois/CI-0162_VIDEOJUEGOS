@@ -8,6 +8,7 @@ struct SpriteComponent {
     std::string textureId;
     int width;
     int height;
+    SDL_Point pivot;
     SDL_Rect srcRect;
     
     // Sprite flipping
@@ -18,12 +19,13 @@ struct SpriteComponent {
     int z_index = 0;
 
     SpriteComponent(
-        const std::string& textureId = "none", int width = 0, int height = 0, int srcRectX = 0, int srcRectY = 0, int z_index = 0, bool flip_to_mouse = false) {
+        const std::string& textureId = "none", int width = 0, int height = 0, int srcRectX = 0, int srcRectY = 0, int z_index = 0, SDL_Point pivot = {0, 0}, bool flip_to_mouse = false) {
         this->textureId = textureId;
         this->width = width;
         this->height = height;
         this->srcRect = {srcRectX, srcRectY, width, height};
         this->z_index = z_index;
+        this->pivot = pivot;
         this->flip_to_mouse = flip_to_mouse;
     }
 };

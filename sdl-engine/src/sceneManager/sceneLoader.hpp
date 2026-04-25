@@ -54,9 +54,14 @@ class SceneLoader {
 
         void loadCameraFollow(Entity& entity, const sol::table& components);
 
+        void loadMouseFollow(Entity& entity, const sol::table& components);
+
         void loadColliders(std::unique_ptr<Registry>& registry, tinyxml2::XMLElement* object_group);
 
         void loadFlashlight(Entity& entity, const sol::table& components);
+
+        void loadChildOf(Entity& entity, const sol::table& components, \
+            const std::unordered_map<std::string, Entity>& namedEntities);
         
         SDL_RendererFlip getFlip(bool flip_d, bool flip_h, bool flip_v);
 
@@ -85,7 +90,7 @@ class SceneLoader {
             int map_width, int map_height, \
             const std::string& tileset, int columns, int z_index, \
             std::unique_ptr<AssetManager>& asset_manager);
-
+        
         void loadButton();
 
     public:
