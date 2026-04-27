@@ -366,12 +366,8 @@ void SceneLoader::loadMouseFollow(Entity& entity, const sol::table& components) 
     sol::optional<sol::table> has_mouse_follow = components["mouse_follow"];
 
     if (has_mouse_follow != sol::nullopt) {
-        SDL_Point origin_pivot = {
-            components["mouse_follow"]["origin_pivot"]["x"].get_or(0), // 0 defualt
-            components["mouse_follow"]["origin_pivot"]["y"].get_or(0) // 0 default
-        };
-        
-        entity.addComponent<MouseFollowComponent>(origin_pivot);
+        float orbit_radius = components["mouse_follow"]["orbit_radius"].get_or(0.0f); // 0.0 default
+        entity.addComponent<MouseFollowComponent>(orbit_radius);
     }
 }
 

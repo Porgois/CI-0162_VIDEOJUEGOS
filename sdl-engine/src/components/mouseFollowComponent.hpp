@@ -5,11 +5,9 @@
 #include <glm/glm.hpp>
 
 struct MouseFollowComponent {
-    SDL_Point origin_pivot;
-
-    MouseFollowComponent() : origin_pivot({0, 0}) {}
-    MouseFollowComponent(SDL_Point origin_pivot)
-        : origin_pivot(origin_pivot) {}
+    float orbit_radius;
+    MouseFollowComponent() : orbit_radius(0.0f) {}
+    MouseFollowComponent(float orbit_radius) : orbit_radius(orbit_radius) {}
 };
 
 #endif // MOUSE_FOLLOW_COMPONENT_HPP

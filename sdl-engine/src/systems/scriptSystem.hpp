@@ -23,8 +23,6 @@ class ScriptSystem : public System {
             lua.set_function("play_animation", setAnimation);
             lua.set_function("go_to_scene", goToScene);
             lua.set_function("get_tag", getTag);
-            lua.set_function("left_collision", leftCollision);
-            lua.set_function("right_collision", rightCollision);
             lua.set_function("set_velocity", setVelocity);
             lua.set_function("get_velocity", getVelocity);
             lua.set_function("get_position", getPosition);
@@ -32,6 +30,9 @@ class ScriptSystem : public System {
             lua.set_function("set_position", setPosition);
             lua.set_function("get_collider_size", getColliderSize);
             lua.set_function("get_collider_offset", getColliderOffset);
+            // create entity
+            // delete entity
+            // add lua system to add other lua files with entities for usage in various places
         }
 
         void update(sol::state& lua) {

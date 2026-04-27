@@ -13,8 +13,7 @@ void ControllerManager::clear() {
     key_down.clear();
 }
 
-// Keyboard
-
+//* Keyboard
 void ControllerManager::addActionKey(const std::string& action_name, int key_code) {
     action_key_name.emplace(action_name, key_code);
     key_down.emplace(key_code, false);
@@ -46,8 +45,7 @@ bool ControllerManager::isActionActive(const std::string& action) {
     return false;
 }
 
-// Mouse
-
+//* Mouse
 void ControllerManager::addMouseButton(const std::string& name, int button_code) {
     mouse_button_name.emplace(name, button_code);
     mouse_button_down.emplace(button_code, false);

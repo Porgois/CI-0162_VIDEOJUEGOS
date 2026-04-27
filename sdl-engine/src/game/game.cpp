@@ -238,11 +238,13 @@ void Game::render() {
     auto tile_entities = registry->getSystem<TileRenderSystem>().getEntities();
     registry->getSystem<RenderSystem>().update(renderer, asset_manager, camera, zoom_level, tile_entities);
     //registry->getSystem<FlashlightRenderSystem>().update(renderer, asset_manager, camera);
+    
     registry->getSystem<TextRenderSystem>().update(renderer, asset_manager);
     registry->getSystem<CursorSystem>().update(renderer, asset_manager);
 
     if (is_debug_mode) {
         registry->getSystem<RenderBoxColliderSystem>().update(renderer, camera, zoom_level);
+        registry->getSystem<MouseFollowSystem>().debugRender(renderer, camera, zoom_level);
     }
 
     SDL_RenderPresent(renderer);

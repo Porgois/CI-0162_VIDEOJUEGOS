@@ -19,18 +19,16 @@ class ChildOfSystem : public System {
                 auto& child_of = entity.getComponent<ChildOfComponent>();
                 auto& transform = entity.getComponent<TransformComponent>();
 
-                // Parent is valid
                 if (!child_of.parent.hasComponent<TransformComponent>()) {
                     continue;
                 }
 
                 auto& parent_transform = child_of.parent.getComponent<TransformComponent>();
+                auto& parent_sprite = child_of.parent.getComponent<SpriteComponent>();
 
-                // Set position
-                transform.position.x = parent_transform.position.x \
-                    + child_of.offset.x;
-                transform.position.y = parent_transform.position.y \
-                    + child_of.offset.y;
+                // Child at center of parent position
+                transform.position.x = parent_transform.position.x + parent_sprite.width / 2;
+                transform.position.y = parent_transform.position.y + parent_sprite.height / 2;
             }
         }
 };

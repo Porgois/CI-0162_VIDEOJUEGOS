@@ -55,7 +55,6 @@ std::tuple<int, int> getPreviousPosition(Entity entity) {
     };
 }
 
-
 void setPosition(Entity entity, int x, int y) {
     auto& transform = entity.getComponent<TransformComponent>();
 
@@ -91,57 +90,15 @@ void goToScene(const std::string& scene_name) {
 //* Tag
 std::string getTag(Entity entity) {
     return entity.getComponent<TagComponent>().tag;
+}
+
+//* Entity spawn/deleteion
+void createEntity(Entity entity) {
+    
+}
+
+void deleteEntity(Entity entity) {
 
 }
 
-//* Collisions
-bool leftCollision(Entity e, Entity other) {
-    // E
-    const auto& e_collider = e.getComponent<BoxColliderComponent>();
-    const auto& e_transform = e.getComponent<TransformComponent>();
-
-    // Other
-    const auto& other_collider = other.getComponent<BoxColliderComponent>();
-    const auto& other_transform = other.getComponent<TransformComponent>();
-
-    float e_x = e_transform.previous_position.x;
-    float e_y = e_transform.previous_position.y;
-    float e_h = static_cast<float>(e_collider.height * e_transform.scale.y);
-
-    float other_x = other_transform.previous_position.x;
-    float other_y = other_transform.previous_position.y;
-    float other_h = static_cast<float>(other_collider.height * other_transform.scale.y);
-
-    // E's right side collides with other (left side)
-    return (
-        other_y < e_y + e_h &&
-        other_y + other_h > e_y &&
-        other_x < e_x
-    );
-} 
-
-bool rightCollision(Entity e, Entity other) {
-    // E
-    const auto& e_collider = e.getComponent<BoxColliderComponent>();
-    const auto& e_transform = e.getComponent<TransformComponent>();
-
-    // Other
-    const auto& other_collider = other.getComponent<BoxColliderComponent>();
-    const auto& other_transform = other.getComponent<TransformComponent>();
-
-    float e_x = e_transform.previous_position.x;
-    float e_y = e_transform.previous_position.y;
-    float e_h = static_cast<float>(e_collider.height * e_transform.scale.y);
-
-    float other_x = other_transform.previous_position.x;
-    float other_y = other_transform.previous_position.y;
-    float other_h = static_cast<float>(other_collider.height * other_transform.scale.y);
-
-    // E's right side collides with other (left side)
-    return (
-        other_y < e_y + e_h &&
-        other_y + other_h > e_y &&
-        other_x > e_x
-    );
-} 
 #endif // LUA_BINDING_HPP
