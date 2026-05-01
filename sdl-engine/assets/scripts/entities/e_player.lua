@@ -12,6 +12,7 @@ return {
         box_collider  = {width = 12, height = 16, offset = {x = 9.5, y = 7.5}},
         rigidbody     = {is_dynamic = false, is_solid = true, mass = 1.0},
         sprite        = {assetId = "player", width = 30, height = 30, src_rect = {x = 0, y = 0}, z_index = 9, pivot = {x = 0, y = 0}, flip = true},
+        tag           = {tag = "t_player"},
         transform     = {position = {x = 360.0, y = 160.0}, scale = {x = 1.0, y = 1.0}, rotation = 0.0}
     }
 }

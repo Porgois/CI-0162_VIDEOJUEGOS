@@ -2,8 +2,10 @@
 #define LUA_BINDING_HPP
 
 #include <string>
+#include <sol/sol.hpp>
 
 #include "../game/game.hpp"
+#include "../sceneManager/sceneLoader.hpp"
 #include "../components/rigidBodyComponent.hpp"
 #include "../components/tagComponent.hpp"
 #include "../components/animationComponent.hpp"
@@ -15,6 +17,15 @@
 //* Controls
 bool isActionActive(const std::string& action) {
     return Game::getInstance().controller_manager->isActionActive(action);
+}
+
+// Mouse
+bool isButtonPressed(const std::string& name) {
+    return Game::getInstance().controller_manager->isMouseButtonDown(name);
+}
+
+bool isButtonJustPressed(const std::string& name) {
+    return Game::getInstance().controller_manager->isMouseButtonJustPressed(name);
 }
 
 //* Rigidbody
@@ -32,18 +43,43 @@ std::tuple<int, int> getVelocity(Entity entity) {
     };
 }
 
-//* Animation
+//* Setters
 void setAnimation(Entity entity, const std::string animation_name) {
     auto& animation = entity.getComponent<AnimationComponent>();
     animation.play(animation_name);
 }
 
-//* Transform
+void setPosition(Entity entity, double x, double y) {
+    auto& transform = entity.getComponent<TransformComponent>();
+
+    transform.position.x = x;
+    transform.position.y = y;
+}
+
+void setRotation(Entity entity, double rotation) {
+    auto& transform = entity.getComponent<TransformComponent>();
+
+    transform.rotation = rotation;
+}
+
+//* Getters
 std::tuple<int, int> getPosition(Entity entity) {
     const auto& transform = entity.getComponent<TransformComponent>();
     return {
         static_cast<int>(transform.position.x),
         static_cast<int>(transform.position.y)
+    };
+}
+
+std::tuple<float, float> getPivotedPosition(Entity entity) {
+    const auto& transform = entity.getComponent<TransformComponent>();
+    const auto& sprite = entity.getComponent<SpriteComponent>();
+    bool has_pivot = (sprite.pivot.x != 0 || sprite.pivot.y != 0);
+    float offset_x = has_pivot ? (sprite.width  * transform.scale.x) / 2.0f : 0.0f;
+    float offset_y = has_pivot ? (sprite.height * transform.scale.y) / 2.0f : 0.0f;
+    return {
+        transform.position.x - offset_x,
+        transform.position.y - offset_y
     };
 }
 
@@ -55,11 +91,15 @@ std::tuple<int, int> getPreviousPosition(Entity entity) {
     };
 }
 
-void setPosition(Entity entity, int x, int y) {
-    auto& transform = entity.getComponent<TransformComponent>();
+std::tuple<int, int> getMouseWorldPosition() {
+    auto [mouse_x, mouse_y] = Game::getInstance().controller_manager->getMousePosition();
+    const auto& camera = Game::getInstance().camera;
+    const float zoom = Game::getInstance().zoom_level;
 
-    transform.position.x = x;
-    transform.position.y = y;
+    return {
+        static_cast<int>((mouse_x + camera.x) / zoom),
+        static_cast<int>((mouse_y + camera.y) / zoom)
+    };
 }
 
 std::tuple<int, int> getColliderSize(Entity entity) { 
@@ -81,6 +121,11 @@ std::tuple<int, int> getColliderOffset(Entity entity) {
     };
 }
 
+bool getFlip(Entity entity) {
+    auto& sprite = entity.getComponent<SpriteComponent>();
+    return sprite.flip == SDL_FLIP_HORIZONTAL;
+}
+
 //* Scene switching
 void goToScene(const std::string& scene_name) {
     Game::getInstance().scene_manager->setNextScene(scene_name);
@@ -89,16 +134,9 @@ void goToScene(const std::string& scene_name) {
 
 //* Tag
 std::string getTag(Entity entity) {
+    if (!entity.hasComponent<TagComponent>()) {
+        return "";
+    }
     return entity.getComponent<TagComponent>().tag;
 }
-
-//* Entity spawn/deleteion
-void createEntity(Entity entity) {
-    
-}
-
-void deleteEntity(Entity entity) {
-
-}
-
 #endif // LUA_BINDING_HPP

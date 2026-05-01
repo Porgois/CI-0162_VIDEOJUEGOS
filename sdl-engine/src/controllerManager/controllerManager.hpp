@@ -2,6 +2,7 @@
 #define CONTROLLER_MANAGER_HPP
 
 #include <SDL2/SDL.h>
+#include <unordered_map>
 #include <map>
 #include <string>
 #include <tuple>
@@ -14,6 +15,7 @@ class ControllerManager {
 
         std::map<std::string, int> mouse_button_name;
         std::map<int, bool> mouse_button_down;
+        std::unordered_map<int, bool> mouse_button_was_down; // For is_button_just_pressed
         
         int mouse_pos_x;
         int mouse_pos_y;
@@ -36,6 +38,8 @@ class ControllerManager {
         void mouseButtonDown(int button_code);
         void mouseButtonUp(int button_code);
         bool isMouseButtonDown(const std::string& name);
+        bool isMouseButtonJustPressed(const std::string& name);
+        void updateMouseButtonStates();
 
         void setMousePosition(int x, int y);
         std::tuple<int, int> getMousePosition();

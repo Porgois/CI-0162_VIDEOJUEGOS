@@ -4,7 +4,8 @@ scene = {
         {asset_id = "cursor",          file_path = "./assets/ui/cursors/cursor.png"},
         {asset_id = "player",          file_path = "./assets/sprites/characters/player/player_sprite_sheet.png"},
         {asset_id = "revolver",        file_path = "./assets/sprites/weapons/revolver.png"},
-        {asset_id = "terrain_sewers",  file_path = "./assets/sprites/tiles/sewers.png"}
+        {asset_id = "terrain_sewers",  file_path = "./assets/sprites/tiles/sewers.png"},
+        {asset_id = "projectile",  file_path = "./assets/sprites/effects/projectiles/projectile_bullet.png"}
     },
     fonts = {
         [0] = {font_id = "pixel_sleigh_24", file_path = "./assets/fonts/PixelSleigh.ttf", font_size = 24}

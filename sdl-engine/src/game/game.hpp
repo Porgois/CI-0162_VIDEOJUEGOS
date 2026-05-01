@@ -21,7 +21,6 @@ const int MILLISECS_PER_FRAME = 1000 / FRAMES_PER_SECOND;
 class Game {
     private:
         SDL_Window* window = nullptr;
-        SDL_Rect camera = {0, 0, 0, 0};
         static SDL_Event event;
         
         // For delta-time calculations
@@ -45,13 +44,16 @@ class Game {
         int map_width = 0;
         int map_height = 0;
         float zoom_level = 2.5;
+        double delta_time = 0.0;
         SDL_Renderer* renderer = nullptr;
+        SDL_Rect camera = {0, 0, 0, 0};
         std::unique_ptr<AssetManager> asset_manager;
         std::unique_ptr<EventManager> event_manager;
         std::unique_ptr<ControllerManager> controller_manager;
         std::unique_ptr<SceneManager> scene_manager;
         std::unique_ptr<Registry> registry;
         sol::state lua;
+        std::unordered_map<std::string, Entity> named_entities;
         
         static Game& getInstance();
         void init();

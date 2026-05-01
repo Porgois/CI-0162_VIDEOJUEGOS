@@ -10,7 +10,6 @@ struct TagComponent {
     TagComponent(const std::string& tag_name = "") {
         this->tag = tag_name;
     }
-
 };
 
 #endif // TAG_COMPONENT_HPP

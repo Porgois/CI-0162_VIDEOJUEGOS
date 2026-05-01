@@ -15,7 +15,6 @@
 #include "../components/flashlightComponent.hpp"
 #include "../components/circleColliderComponent.hpp"
 #include "../components/boxColliderComponent.hpp"
-#include "../components/colliderComponent.hpp"
 #include "../components/textComponent.hpp"
 #include "../components/clickableComponent.hpp"
 #include "../components/cameraFollowComponent.hpp"
@@ -155,14 +154,6 @@ void SceneLoader::loadCursor(Entity& entity, const sol::table& components) {
 
     if (has_cursor != sol::nullopt) {
         entity.addComponent<CursorComponent>();
-    }
-}
-
-void SceneLoader::loadCollider(Entity& entity, const sol::table& components) {
-    sol::optional<sol::table> has_collider = components["collider"];
-
-    if (has_collider != sol::nullopt) {
-        entity.addComponent<ColliderComponent>();
     }
 }
 
@@ -700,63 +691,63 @@ void SceneLoader::loadLayer(
     layer_entity.addComponent<LayerComponent>(z_index);
 }
 //*----------TILES----------
+Entity SceneLoader::createEntity(sol::state& lua, const sol::table& entity,
+    std::unique_ptr<Registry>& registry,
+    std::unordered_map<std::string, Entity>& named_entities) {
 
-void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities, \
+    Entity new_entity = registry->createEntity();
+
+    // Store name
+    sol::optional<std::string> has_name = entity["name"];
+    if (has_name != sol::nullopt) {
+        named_entities.emplace(has_name.value(), new_entity);
+    }
+
+    sol::optional<sol::table> has_components = entity["components"];
+    if (has_components != sol::nullopt) {
+        sol::table components = entity["components"];
+        loadText(new_entity, components);
+        loadTag(new_entity, components);
+        loadClickable(new_entity, components);
+        loadAnimation(new_entity, components);
+        loadCursor(new_entity, components);
+        loadBoxCollider(new_entity, components);
+        loadCircleCollider(new_entity, components);
+        loadRigidbody(new_entity, components);
+        loadSprite(new_entity, components);
+        loadCameraFollow(new_entity, components);
+        loadMouseFollow(new_entity, components);
+        loadTransform(new_entity, components);
+        loadFlashlight(new_entity, components);
+        loadScript(lua, new_entity, components);
+    }
+
+    return new_entity;
+}
+
+void SceneLoader::loadEntities(sol::state& lua, const sol::table& entities,
     std::unique_ptr<Registry>& registry) {
-    std::unordered_map<std::string, Entity> named_entities;
-    int index = 0;
 
+    std::unordered_map<std::string, Entity> named_entities;
+
+    // Create entities and their components
+    int index = 0;
     while (true) {
         sol::optional<sol::table> has_entity = entities[index];
+        if (has_entity == sol::nullopt) break;
 
-        if (has_entity == sol::nullopt) { // no entity
-            break;
-        }
-
-        sol::table entity = entities[index];
-        Entity new_entity = registry->createEntity();
-
-        // Store name
-        sol::optional<std::string> has_name = entity["name"];
-        if (has_name != sol::nullopt) { // entity has a name field
-            named_entities.emplace(has_name.value(), new_entity);
-        }
-
-
-        sol::optional<sol::table> has_components = entity["components"];
-        if (has_components != sol::nullopt) {
-            sol::table components = entity["components"];
-
-            loadText(new_entity, components);
-            loadTag(new_entity, components);
-            loadClickable(new_entity, components);
-            loadAnimation(new_entity, components);
-            loadCursor(new_entity, components);
-            loadBoxCollider(new_entity, components);
-            loadCircleCollider(new_entity, components);
-            loadRigidbody(new_entity, components);
-            loadSprite(new_entity, components);
-            loadCameraFollow(new_entity, components);
-            loadMouseFollow(new_entity, components);
-            loadTransform(new_entity, components);
-            loadFlashlight(new_entity, components);
-            loadScript(lua, new_entity, components);
-        }
-
+        createEntity(lua, entities[index], registry, named_entities);
         index++;
     }
 
-    // Handle childOf component
+    // resolve childOf relationships
     index = 0;
     while (true) {
         sol::optional<sol::table> has_entity = entities[index];
-        if (has_entity == sol::nullopt) {
-            break;
-        }
+        if (has_entity == sol::nullopt) break;
 
         sol::table entity = entities[index];
         sol::optional<std::string> has_name = entity["name"];
-
         if (has_name != sol::nullopt) {
             sol::optional<sol::table> has_components = entity["components"];
             if (has_components != sol::nullopt) {

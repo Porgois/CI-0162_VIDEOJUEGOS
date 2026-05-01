@@ -6,7 +6,9 @@ function on_awake()
 end
 
 function on_collision(other)
-    
+    -- Collide with enemies
+
+    -- Collide with pickups
 end
 
 function update()

@@ -107,6 +107,7 @@ void Game::init() {
 
 // initiliaze all necessary stuff
 void Game::setup() {
+
     // Add systems
     registry->addSystem<ScriptSystem>();
 
@@ -133,13 +134,14 @@ void Game::setup() {
     //registry->addSystem<DamageSystem>();
    
     lua.open_libraries(sol::lib::base, sol::lib::math); // libraries
-    registry->getSystem<ScriptSystem>().createLuaBinding(lua); // bindings
+    registry->getSystem<ScriptSystem>().createLuaBindings(lua, registry, named_entities); // bindings
     scene_manager->loadScriptScenes("./assets/scripts/scenes/scenes.lua", lua); // scenes
 }
 
 // Processes all kinds of input
 void Game::processInput() {
     SDL_Event sdl_event;
+    controller_manager->updateMouseButtonStates();
 
     while (SDL_PollEvent(&sdl_event)) {
         switch (sdl_event.type) {
@@ -207,8 +209,7 @@ void Game::update() {
     }
 
     // set delta_time for use throughout
-    double delta_time = (SDL_GetTicks() - millisecs_previous_frame) / 1000.0;
-    //TODO: Add to LUA state
+    delta_time = (SDL_GetTicks() - millisecs_previous_frame) / 1000.0;
 
     millisecs_previous_frame = SDL_GetTicks();
     event_manager->reset();
@@ -218,6 +219,7 @@ void Game::update() {
     
     registry->update();
     registry->getSystem<ScriptSystem>().update(lua);
+    registry->update();
 
     registry->getSystem<FlipSystem>().update(camera, zoom_level);
     registry->getSystem<AnimationSystem>().update();
@@ -262,6 +264,7 @@ void Game::runScene() {
 
     asset_manager->clearAssets();
     registry->clearAllEntities();
+    named_entities.clear();
 }
 
 // Runs the actual game in a loop

@@ -11,6 +11,7 @@ ControllerManager::~ControllerManager() {
 void ControllerManager::clear() {
     action_key_name.clear();
     key_down.clear();
+    mouse_button_was_down.clear();
 }
 
 //* Keyboard
@@ -49,6 +50,7 @@ bool ControllerManager::isActionActive(const std::string& action) {
 void ControllerManager::addMouseButton(const std::string& name, int button_code) {
     mouse_button_name.emplace(name, button_code);
     mouse_button_down.emplace(button_code, false);
+    mouse_button_was_down.emplace(button_code, false);
 }
 
 void ControllerManager::mouseButtonDown(int button_code) {
@@ -67,6 +69,15 @@ void ControllerManager::mouseButtonUp(int button_code) {
     }
 }
 
+bool ControllerManager::isMouseButtonJustPressed(const std::string& name) {
+    auto it = mouse_button_name.find(name);
+    if (it != mouse_button_name.end()) {
+        int button_code = it->second;
+        return mouse_button_down[button_code] && !mouse_button_was_down[button_code];
+    }
+    return false;
+}
+
 bool ControllerManager::isMouseButtonDown(const std::string& name) {
     auto it = mouse_button_name.find(name);
 
@@ -75,6 +86,12 @@ bool ControllerManager::isMouseButtonDown(const std::string& name) {
         return mouse_button_down[button_code];
     }
     return false;
+}
+
+void ControllerManager::updateMouseButtonStates() {
+    for (auto& [key, value] : mouse_button_was_down) {
+        value = mouse_button_down[key]; // snapshot current -> previous
+    }
 }
 
 void ControllerManager::setMousePosition(int x, int y) {

@@ -24,43 +24,41 @@ class SceneLoader {
 
         void loadButtons(const sol::table& buttons, \
             std::unique_ptr<ControllerManager>& controller_manager);
-
+         
         void loadEntities(sol::state& lua, const sol::table& entities, \
             std::unique_ptr<Registry>& registry);
         
-        void loadTag(Entity& entity, const sol::table& components);
+        static void loadTag(Entity& entity, const sol::table& components);
 
-        void loadAnimation(Entity& entity, const sol::table& components);
+        static void loadAnimation(Entity& entity, const sol::table& components);
         
-        void loadCursor(Entity& entity, const sol::table& components);
+        static void loadCursor(Entity& entity, const sol::table& components);
 
-        void loadBoxCollider(Entity& entity, const sol::table& components);
+        static void loadBoxCollider(Entity& entity, const sol::table& components);
 
-        void loadCollider(Entity& entity, const sol::table& components);
+        static void loadCircleCollider(Entity& entity, const sol::table& components);
 
-        void loadCircleCollider(Entity& entity, const sol::table& components);
+        static void loadRigidbody(Entity& entity, const sol::table& components);
 
-        void loadRigidbody(Entity& entity, const sol::table& components);
+        static void loadScript(sol::state& lua, Entity& entity, const sol::table& components);
 
-        void loadScript(sol::state& lua, Entity& entity, const sol::table& components);
+        static void loadSprite(Entity& entity, const sol::table& components);
 
-        void loadSprite(Entity& entity, const sol::table& components);
+        static void loadTransform(Entity& entity, const sol::table& components);
 
-        void loadTransform(Entity& entity, const sol::table& components);
+        static void loadText(Entity& entity, const sol::table& components);
 
-        void loadText(Entity& entity, const sol::table& components);
+        static void loadClickable(Entity& entity, const sol::table& components);
 
-        void loadClickable(Entity& entity, const sol::table& components);
+        static void loadCameraFollow(Entity& entity, const sol::table& components);
 
-        void loadCameraFollow(Entity& entity, const sol::table& components);
+        static void loadMouseFollow(Entity& entity, const sol::table& components);
 
-        void loadMouseFollow(Entity& entity, const sol::table& components);
+        static void loadColliders(std::unique_ptr<Registry>& registry, tinyxml2::XMLElement* object_group);
 
-        void loadColliders(std::unique_ptr<Registry>& registry, tinyxml2::XMLElement* object_group);
+        static void loadFlashlight(Entity& entity, const sol::table& components);
 
-        void loadFlashlight(Entity& entity, const sol::table& components);
-
-        void loadChildOf(Entity& entity, const sol::table& components, \
+        static void loadChildOf(Entity& entity, const sol::table& components, \
             const std::unordered_map<std::string, Entity>& namedEntities);
         
         SDL_RendererFlip getFlip(bool flip_d, bool flip_h, bool flip_v);
@@ -98,6 +96,9 @@ class SceneLoader {
 
         ~SceneLoader();
 
+        static Entity createEntity(sol::state& lua, const sol::table& entity, std::unique_ptr<Registry>& registry, \
+            std::unordered_map<std::string, Entity>& named_entities);
+        
         void loadScene(const std::string& scene_path, \
             sol::state& lua, \
             std::unique_ptr<AssetManager>& asset_manager, \
