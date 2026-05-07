@@ -5,18 +5,16 @@
 
 struct ScriptComponent {
     sol::function update;
+    sol::function start;
     sol::function onClick;
     sol::function onCollision;
+    bool started = false;
 
-    ScriptComponent(
-        sol::function update = sol::lua_nil, 
-        sol::function onClick = sol::lua_nil,
-        sol::function onCollision = sol::lua_nil
-    ) {
-        this->update = update;
-        this->onClick = onClick;
-        this->onCollision = onCollision;
-    }
+    ScriptComponent() = default;
+
+    ScriptComponent(sol::function update, sol::function start, 
+        sol::function onClick, sol::function onCollision)
+            : update(update), start(start), onClick(onClick), onCollision(onCollision), started(false) {}
 };
 
 #endif // SCRIPT_COMPONENT_HPP

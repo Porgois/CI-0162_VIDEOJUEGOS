@@ -9,6 +9,8 @@
 
 class ScriptSystem : public System {
 public:
+    // Add this global flag to sceneLoader.hpp or game.hpp
+    bool g_is_spawning = false;
     ScriptSystem() {
         requireComponent<ScriptComponent>();
     }
@@ -23,11 +25,13 @@ public:
 
         // Controls
         lua.set_function("is_action_active", isActionActive);
-        lua.set_function("is_button_active",  isButtonPressed);
+        lua.set_function("is_button_pressed",  isButtonPressed);
         lua.set_function("is_button_just_pressed", isButtonJustPressed);
 
         // Misc
         lua.set_function("play_animation", setAnimation);
+        lua.set_function("toggle_camera_follow", toggleCameraFollow);
+        lua.set_function("toggle_mouse_follow", toggleMouseFollow);
 
         // Setters
         lua.set_function("set_velocity", setVelocity);
@@ -38,7 +42,8 @@ public:
         lua.set_function("get_velocity", getVelocity);
         lua.set_function("get_position", getPosition);
         lua.set_function("get_pivoted_position", getPivotedPosition);
-        lua.set_function("get_mouse_position", getMouseWorldPosition);
+        lua.set_function("get_mouse_world_position", getMouseWorldPosition);
+        lua.set_function("get_mouse_position", getMousePosition);
         
         lua.set_function("get_previous_position", getPreviousPosition);
         lua.set_function("get_collider_size", getColliderSize);
@@ -55,10 +60,10 @@ public:
         lua.set_function("go_to_scene", goToScene);
 
         // Entity creation & deletion
-        lua.set_function("spawn_entity", [&lua, &registry, &named_entities](const sol::table& entity) -> Entity {
-            return SceneLoader::createEntity(lua, entity, registry, named_entities);
+        lua.set_function("spawn_entity", [&lua, &registry, &named_entities](const sol::table& entity_def) -> Entity {
+            return SceneLoader::createEntity(lua, entity_def, registry, named_entities);
         });
-
+                
         lua.set_function("delete_entity", [&registry, &named_entities](Entity entity) {
             auto it = std::find_if(named_entities.begin(), named_entities.end(),
                 [&entity](const auto& pair) {
@@ -72,13 +77,45 @@ public:
             registry->destroyEntity(entity);
         });
     }
+    
+    void start(sol::state& lua) {
+        for (auto entity : getSystemEntities()) {
+            auto& script = entity.getComponent<ScriptComponent>();
+            if (script.started) continue;
+            script.started = true;
+
+            if (script.start.valid()) {
+                // Get the environment the function was defined in
+                sol::environment env = sol::get_environment(script.start);
+                if (env.valid()) {
+                    env["this"] = entity;
+                } else {
+                    lua["this"] = entity;
+                }
+                auto result = script.start();
+                if (!result.valid()) {
+                    sol::error err = result;
+                    std::cout << "[SCRIPT] start() error: " << err.what() << std::endl;
+                }
+            }
+        }
+    }
 
     void update(sol::state& lua) {
         for (auto entity : getSystemEntities()) {
             const auto& script = entity.getComponent<ScriptComponent>();
             if (script.update.valid()) {
-                lua["this"] = entity;
-                script.update();
+                sol::environment env = sol::get_environment(script.update);
+                if (env.valid()) {
+                    env["this"] = entity;
+                } else {
+                    lua["this"] = entity;  // fallback
+                }
+                auto result = script.update();
+                if (!result.valid()) {
+                    sol::error err = result;
+                    std::cout << "[SCRIPT] update() error: " << err.what() << std::endl;
+                }
             }
         }
     }

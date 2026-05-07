@@ -26,9 +26,18 @@ class ChildOfSystem : public System {
                 auto& parent_transform = child_of.parent.getComponent<TransformComponent>();
                 auto& parent_sprite = child_of.parent.getComponent<SpriteComponent>();
 
-                // Child at center of parent position
-                transform.position.x = parent_transform.position.x + parent_sprite.width / 2;
-                transform.position.y = parent_transform.position.y + parent_sprite.height / 2;
+                glm::vec2 parent_center = glm::vec2(
+                    parent_transform.position.x + parent_sprite.width  * 0.5f,
+                    parent_transform.position.y + parent_sprite.height * 0.5f
+                );
+
+                // Preserve any already-set child offset on first update.
+                if (child_of.offset == glm::vec2(0.0f, 0.0f) &&
+                    transform.position != parent_center) {
+                    child_of.offset = transform.position - parent_center;
+                }
+
+                transform.position = parent_center + child_of.offset;
             }
         }
 };

@@ -133,7 +133,22 @@ void Game::setup() {
     registry->addSystem<UISystem>();
     //registry->addSystem<DamageSystem>();
    
-    lua.open_libraries(sol::lib::base, sol::lib::math); // libraries
+    lua.open_libraries(
+        sol::lib::base,
+        sol::lib::math,
+        sol::lib::table,
+        sol::lib::string,
+        sol::lib::io
+    ); // libraries
+
+    // Game state values for script comunication
+    lua["GameState"] = lua.create_table();
+    lua["GameState"]["zones"] = lua.create_table();
+    lua["GameState"]["dropped_bullet"] = sol::nil;
+    lua["GameState"]["drop_state"] = "idle"; // states: "idle", "pending", "accepted", "rejected"
+    lua["GameState"]["zone_config_queue"] = lua.create_table();
+    lua["GameState"]["slotted_bullets"] = lua.create_table();
+
     registry->getSystem<ScriptSystem>().createLuaBindings(lua, registry, named_entities); // bindings
     scene_manager->loadScriptScenes("./assets/scripts/scenes/scenes.lua", lua); // scenes
 }
@@ -213,14 +228,13 @@ void Game::update() {
 
     millisecs_previous_frame = SDL_GetTicks();
     event_manager->reset();
-    //registry->getSystem<DamageSystem>().subscribeCollisionEvent(event_manager);
     registry->getSystem<OverlapSystem>().subscribeCollisionEvent(event_manager);
-    registry->getSystem<UISystem>().subscribeClickEvent(event_manager);
-    
+    registry->getSystem<UISystem>().subscribeClickEvent(event_manager, lua);
     registry->update();
     registry->getSystem<ScriptSystem>().update(lua);
     registry->update();
-
+    registry->getSystem<ScriptSystem>().start(lua);
+    
     registry->getSystem<FlipSystem>().update(camera, zoom_level);
     registry->getSystem<AnimationSystem>().update();
     registry->getSystem<PhysicsSystem>().update();
@@ -234,7 +248,7 @@ void Game::update() {
 
 // Renders the screen contents
 void Game::render() {
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
     SDL_RenderClear(renderer);
 
     auto tile_entities = registry->getSystem<TileRenderSystem>().getEntities();
@@ -247,6 +261,7 @@ void Game::render() {
     if (is_debug_mode) {
         registry->getSystem<RenderBoxColliderSystem>().update(renderer, camera, zoom_level);
         registry->getSystem<MouseFollowSystem>().debugRender(renderer, camera, zoom_level);
+        registry->getSystem<UISystem>().debug_draw(renderer);
     }
 
     SDL_RenderPresent(renderer);
@@ -254,6 +269,11 @@ void Game::render() {
 
 void Game::runScene() {
     scene_manager->loadScene();
+    std::cout << "[SCENE] loadScene done" << std::endl;
+    registry->update();
+    std::cout << "[SCENE] first registry->update() done" << std::endl;
+    registry->getSystem<ScriptSystem>().start(lua);
+    std::cout << "[SCENE] ScriptSystem::start() done" << std::endl;
     scene_manager->startScene();
 
     while(scene_manager->isRunning()) {

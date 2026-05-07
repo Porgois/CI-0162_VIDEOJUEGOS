@@ -75,12 +75,21 @@ public:
                 int offset_x = (sprite.pivot.x != 0 || sprite.pivot.y != 0) ? w / 2 : 0;
                 int offset_y = (sprite.pivot.x != 0 || sprite.pivot.y != 0) ? h / 2 : 0;
 
-                SDL_Rect dstRect = {
-                    static_cast<int>((transform.position.x * zoom_level) - camera.x) - offset_x,
-                    static_cast<int>((transform.position.y * zoom_level) - camera.y) - offset_y,
-                    w,
-                    h
-                };
+                SDL_Rect dstRect;
+                if (sprite.is_ui) {
+                    dstRect = {
+                        static_cast<int>(transform.position.x) - offset_x,
+                        static_cast<int>(transform.position.y) - offset_y,
+                        static_cast<int>(sprite.width  * transform.scale.x),
+                        static_cast<int>(sprite.height * transform.scale.y)
+                    };
+                } else {
+                    dstRect = {
+                        static_cast<int>((transform.position.x * zoom_level) - camera.x) - offset_x,
+                        static_cast<int>((transform.position.y * zoom_level) - camera.y) - offset_y,
+                        w, h
+                    };
+                }
                 SDL_RenderCopyEx(renderer, asset_manager->getTexture(sprite.textureId), \
                     &srcRect, &dstRect, transform.rotation, &center, sprite.flip);
             }

@@ -145,7 +145,12 @@ void SceneLoader::loadClickable(Entity& entity, const sol::table& components) {
     sol::optional<sol::table> has_clickable = components["clickable"];
 
     if (has_clickable != sol::nullopt) {
-        entity.addComponent<ClickableComponent>();
+        entity.addComponent<ClickableComponent>(
+            components["clickable"]["width"].get_or(0),
+            components["clickable"]["height"].get_or(0),
+            components["clickable"]["offset_x"].get_or(0),
+            components["clickable"]["offset_y"].get_or(0)
+        );
     }
 }
 
@@ -203,51 +208,29 @@ void SceneLoader::loadRigidbody(Entity& entity, const sol::table& components) {
 
 void SceneLoader::loadScript(sol::state& lua, Entity& entity, const sol::table& components) {
     sol::optional<sol::table> has_script = components["script"];
+    if (has_script == sol::nullopt) return;
 
-    if (has_script != sol::nullopt) {
-        lua["on_awake"] = sol::nil;
-        lua["on_click"] = sol::nil;
-        lua["update"] = sol::nil;
-        lua["on_collision"] = sol::nil;
-   
-        std::string script_path = components["script"]["path"];
-        lua.script_file(script_path);
+    std::string script_path = components["script"]["path"];
 
-        // On awake
-        sol::optional<sol::function> has_on_awake = lua["on_awake"];
+    // Create a fresh environment inheriting globals
+    sol::environment env(lua, sol::create, lua.globals());
+    
+    // Run the script inside this environment
+    lua.script_file(script_path, env);
 
-        if (has_on_awake != sol::nullopt) {
-            lua["this"] = entity;
-            sol::function on_awake = lua["on_awake"];
-            on_awake();
-        }
-
-        // On click
-        sol::optional<sol::function> has_on_click = lua["on_click"];
-        sol::function on_click = sol::nil;
-
-        if (has_on_click != sol::nullopt) {
-            on_click = lua["on_click"];
-        }
-
-        // Update
-        sol::optional<sol::function> has_update = lua["update"];
-        sol::function update = sol::nil;
-
-        if (has_update != sol::nullopt) {
-            update = lua["update"];
-        }
-
-        // Collision
-        sol::optional<sol::function> has_on_collision = lua["on_collision"];
-        sol::function on_collision = sol::nil;
-
-        if (has_on_collision != sol::nullopt) {
-            on_collision = lua["on_collision"];
-        }
-
-        entity.addComponent<ScriptComponent>(update, on_click, on_collision);
+    // on_awake runs immediately
+    sol::optional<sol::function> has_on_awake = env["on_awake"];
+    if (has_on_awake != sol::nullopt) {
+        env["this"] = entity;
+        has_on_awake.value()();
     }
+
+    sol::function on_click     = env["on_click"].get_or(sol::function{});
+    sol::function update       = env["update"].get_or(sol::function{});
+    sol::function start        = env["start"].get_or(sol::function{});
+    sol::function on_collision = env["on_collision"].get_or(sol::function{});
+
+    entity.addComponent<ScriptComponent>(update, start, on_click, on_collision);
 }
 
 void SceneLoader::loadSprite(Entity& entity, const sol::table& components) {
@@ -267,7 +250,8 @@ void SceneLoader::loadSprite(Entity& entity, const sol::table& components) {
             components["sprite"]["src_rect"]["y"],
             components["sprite"]["z_index"].get_or(0), // 0 default
             pivot,
-            components["sprite"]["flip"]
+            components["sprite"]["flip"],
+            components["sprite"]["is_ui"].get_or(false) // false defualt
         );
     }
 }

@@ -13,6 +13,7 @@
 
 class SceneLoader {
     private:
+       
         void loadFonts(const sol::table& fonts, \
             std::unique_ptr<AssetManager>& asset_manager);
 
@@ -105,6 +106,8 @@ class SceneLoader {
             std::unique_ptr<ControllerManager>& controller_manager,
             std::unique_ptr<Registry>& registry, \
             SDL_Renderer* renderer);
+
+      
 };
 
 #endif // SCENE_LOADER_HPP

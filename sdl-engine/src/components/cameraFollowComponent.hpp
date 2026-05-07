@@ -6,7 +6,7 @@
 #include "../components/transformComponent.hpp"
 
 struct CameraFollowComponent {
-
+    bool is_active = true;
     CameraFollowComponent() {}
 
 };

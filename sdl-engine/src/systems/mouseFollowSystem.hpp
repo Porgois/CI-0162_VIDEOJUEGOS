@@ -28,6 +28,7 @@ class MouseFollowSystem : public System {
                 auto& mouse_follow = entity.getComponent<MouseFollowComponent>();
                 auto& sprite = entity.getComponent<SpriteComponent>();
                 auto& child_of = entity.getComponent<ChildOfComponent>();
+               
 
                 auto& parent_transform = child_of.parent.getComponent<TransformComponent>();
                 auto& parent_sprite = child_of.parent.getComponent<SpriteComponent>();
@@ -38,6 +39,10 @@ class MouseFollowSystem : public System {
                 float orbit_radius = mouse_follow.orbit_radius;
                 float rad = angle * (M_PI / 180.0f);
                 float deadzone = 0.15f;
+
+                if (!mouse_follow.is_active) {
+                    return;
+                }
 
                 // Position
                 transform.position.x = (cx + camera.x) / zoom_level + cosf(rad) * orbit_radius;

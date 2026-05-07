@@ -7,7 +7,7 @@ return {
                 walk = {row = 1, num_frames = 6, animation_speed = 12, loop = true}
             }
         },
-        script        = {path = "./assets/scripts/playerScripts/s_player.lua"},
+        script        = {path = "./assets/scripts/playerScripts/scr_player.lua"},
         camera_follow = {},
         box_collider  = {width = 12, height = 16, offset = {x = 9.5, y = 7.5}},
         rigidbody     = {is_dynamic = false, is_solid = true, mass = 1.0},

@@ -10,6 +10,8 @@
 #include "../components/tagComponent.hpp"
 #include "../components/animationComponent.hpp"
 #include "../components/boxColliderComponent.hpp"
+#include "../components/cameraFollowComponent.hpp"
+#include "../components/mouseFollowComponent.hpp"
 #include "../components/transformComponent.hpp"
 #include "../components/spriteComponent.hpp"
 #include "../e.c.s./ecs.hpp"
@@ -19,7 +21,7 @@ bool isActionActive(const std::string& action) {
     return Game::getInstance().controller_manager->isActionActive(action);
 }
 
-// Mouse
+//* Mouse
 bool isButtonPressed(const std::string& name) {
     return Game::getInstance().controller_manager->isMouseButtonDown(name);
 }
@@ -102,6 +104,15 @@ std::tuple<int, int> getMouseWorldPosition() {
     };
 }
 
+std::tuple<int, int> getMousePosition() {
+    auto [mouse_x, mouse_y] = Game::getInstance().controller_manager->getMousePosition();
+ 
+    return {
+        static_cast<int>(mouse_x),
+        static_cast<int>(mouse_y)
+    };
+}
+
 std::tuple<int, int> getColliderSize(Entity entity) { 
     auto& collider = entity.getComponent<BoxColliderComponent>();
     auto& transform = entity.getComponent<TransformComponent>();
@@ -130,6 +141,18 @@ bool getFlip(Entity entity) {
 void goToScene(const std::string& scene_name) {
     Game::getInstance().scene_manager->setNextScene(scene_name);
     Game::getInstance().scene_manager->stopScene();
+}
+
+//* Camera follow
+void toggleCameraFollow(Entity entity, bool value) {
+     auto& camera_follow = entity.getComponent<CameraFollowComponent>();
+     camera_follow.is_active = value;
+}
+
+//* Mouse follow
+void toggleMouseFollow(Entity entity, bool value) {
+     auto& mouse_follow = entity.getComponent<MouseFollowComponent>();
+     mouse_follow.is_active = value;
 }
 
 //* Tag

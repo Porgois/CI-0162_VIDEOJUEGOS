@@ -70,22 +70,38 @@ void ControllerManager::mouseButtonUp(int button_code) {
 }
 
 bool ControllerManager::isMouseButtonJustPressed(const std::string& name) {
-    auto it = mouse_button_name.find(name);
-    if (it != mouse_button_name.end()) {
-        int button_code = it->second;
-        return mouse_button_down[button_code] && !mouse_button_was_down[button_code];
+    auto name_it = mouse_button_name.find(name);
+    if (name_it == mouse_button_name.end()) {
+        return false;
     }
-    return false;
+
+    int button_code = name_it->second;
+
+    auto down_it = mouse_button_down.find(button_code);
+    if (down_it == mouse_button_down.end()) {
+        return false;
+    }
+
+    auto was_it = mouse_button_was_down.find(button_code);
+    if (was_it == mouse_button_was_down.end()) {
+        return false;
+    }
+
+    return down_it->second && !was_it->second;
 }
 
 bool ControllerManager::isMouseButtonDown(const std::string& name) {
-    auto it = mouse_button_name.find(name);
-
-    if (it != mouse_button_name.end()) {
-        int button_code = mouse_button_name[name];
-        return mouse_button_down[button_code];
+    auto name_it = mouse_button_name.find(name);
+    if (name_it == mouse_button_name.end()) {
+        return false;
     }
-    return false;
+
+    auto code_it = mouse_button_down.find(name_it->second);
+    if (code_it == mouse_button_down.end()) {
+        return false;
+    }
+
+    return code_it->second;
 }
 
 void ControllerManager::updateMouseButtonStates() {

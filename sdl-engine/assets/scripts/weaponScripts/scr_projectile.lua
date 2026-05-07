@@ -7,6 +7,5 @@ function on_collision(other)
     if tag == "" or tag == "t_player" then
         return
     end
-    
     delete_entity(this)
 end

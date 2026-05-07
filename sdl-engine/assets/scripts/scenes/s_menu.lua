@@ -46,7 +46,7 @@ scene = {
         { -- New game
             components = {
                 clickable = {},
-                script = {path = "./assets/scripts/menu_button_01.lua"},
+                script = {path = "./assets/scripts/menuScripts/menu_button_01.lua"},
                 text = {text = "New game", font_id = "pixel_sleigh_24", r = 255, g = 255, b = 255, a = 255},
                 transform = {position = {x = 50.0, y = 110.0}, scale = {x = 1.0, y = 1.0}, rotation = 0.0}
             }
