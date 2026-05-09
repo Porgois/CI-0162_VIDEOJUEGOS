@@ -17,7 +17,7 @@ public:
 
     void update(SDL_Renderer* renderer, std::unique_ptr<AssetManager>& asset_manager,
         SDL_Rect& camera, float zoom_level,
-        std::vector<Entity>& tile_entities) {
+        std::vector<Entity>& tile_entities, bool render_unlit = false) {
 
         struct RenderItem {
             int z_index;
@@ -54,8 +54,11 @@ public:
 
         for (auto& item : queue) {
             if (item.is_tile) { //* TILES
+                // tiles are always lit, skip in unlit pass
+                if (render_unlit) continue;
+
                 const auto& tile_map = item.entity.getComponent<TileMapComponent>();
-                SDL_SetTextureBlendMode(tile_map.baked_texture, SDL_BLENDMODE_BLEND); // add this
+                SDL_SetTextureBlendMode(tile_map.baked_texture, SDL_BLENDMODE_BLEND);
                 SDL_Rect src = { 0, 0, tile_map.width, tile_map.height };
                 SDL_Rect dst = {
                     static_cast<int>((-camera.x)),
@@ -67,6 +70,10 @@ public:
             } else { //* SPRITES
                 const auto& sprite = item.entity.getComponent<SpriteComponent>();
                 const auto& transform = item.entity.getComponent<TransformComponent>();
+
+                // only render items that match the current pass
+                if (sprite.is_unlit != render_unlit) continue;
+
                 SDL_Rect srcRect = sprite.srcRect;
                 int w = static_cast<int>(sprite.width  * transform.scale.x * zoom_level);
                 int h = static_cast<int>(sprite.height * transform.scale.y * zoom_level);

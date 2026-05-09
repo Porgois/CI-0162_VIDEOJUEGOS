@@ -251,7 +251,8 @@ void SceneLoader::loadSprite(Entity& entity, const sol::table& components) {
             components["sprite"]["z_index"].get_or(0), // 0 default
             pivot,
             components["sprite"]["flip"],
-            components["sprite"]["is_ui"].get_or(false) // false defualt
+            components["sprite"]["is_ui"].get_or(false), // false defualt
+            components["sprite"]["is_unlit"].get_or(false) // false defualt
         );
     }
 }
@@ -348,10 +349,52 @@ void SceneLoader::loadMouseFollow(Entity& entity, const sol::table& components) 
 
 void SceneLoader::loadFlashlight(Entity& entity, const sol::table& components) {
     sol::optional<sol::table> has_flashlight = components["flashlight"];
+    if (has_flashlight == sol::nullopt) return;
 
-    if (has_flashlight != sol::nullopt) {
-        entity.addComponent<FlashlightComponent>();
+    sol::table f = has_flashlight.value();
+
+    FlashlightComponent flashlight;
+
+    // Texture IDs
+    flashlight.cone_texture_id = f.get_or("cone_texture_id",   std::string("flashlight_cone"));
+    flashlight.circle_texture_id = f.get_or("circle_texture_id", std::string("flashlight_source"));
+
+    // Cone dimensions
+    flashlight.cone_width = f.get_or("cone_width", flashlight.cone_width);
+    flashlight.cone_height = f.get_or("cone_height", flashlight.cone_height);
+    flashlight.cone_end_offset = f.get_or("cone_end_offset", flashlight.cone_end_offset);
+    flashlight.cone_origin_x = f.get_or("cone_origin_x", flashlight.cone_origin_x);
+    flashlight.cone_origin_y = f.get_or("cone_origin_y", flashlight.cone_height / 2);
+
+    // Origin offset
+    flashlight.origin_offset_x = f.get_or("origin_offset_x", flashlight.origin_offset_x);
+    flashlight.origin_offset_y = f.get_or("origin_offset_y", flashlight.origin_offset_y);
+
+    // Source circle
+    flashlight.source_radius = f.get_or("source_radius", flashlight.source_radius);
+
+    // Flicker
+    flashlight.flicker_speed = f.get_or("flicker_speed", flashlight.flicker_speed);
+    flashlight.flicker_enabled = f.get_or("flicker_enabled", flashlight.flicker_enabled);
+
+    // Dynamic scale
+    flashlight.min_scale = f.get_or("min_scale", flashlight.min_scale);
+    flashlight.max_scale = f.get_or("max_scale", flashlight.max_scale);
+    flashlight.reach = f.get_or("reach", flashlight.reach);
+
+    // Mode
+    std::string mode = f.get_or("mode", std::string("full"));
+    if (mode == "circle_only") {
+    flashlight.mode = FlashlightMode::CircleOnly;
     }
+    else if (mode == "cone_only") {
+        flashlight.mode = FlashlightMode::ConeOnly;
+    }
+    else {
+        flashlight.mode = FlashlightMode::Full;
+    }
+    
+    entity.addComponent<FlashlightComponent>(flashlight);
 }
 
 void SceneLoader::loadColliders(std::unique_ptr<Registry>& registry, tinyxml2::XMLElement* object_group) {

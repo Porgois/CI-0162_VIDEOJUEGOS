@@ -252,9 +252,10 @@ void Game::render() {
     SDL_RenderClear(renderer);
 
     auto tile_entities = registry->getSystem<TileRenderSystem>().getEntities();
-    registry->getSystem<RenderSystem>().update(renderer, asset_manager, camera, zoom_level, tile_entities);
-    //registry->getSystem<FlashlightRenderSystem>().update(renderer, asset_manager, camera);
-    
+    registry->getSystem<RenderSystem>().update(renderer, asset_manager, camera, zoom_level, tile_entities, false);
+    registry->getSystem<FlashlightRenderSystem>().update(renderer, asset_manager, camera, zoom_level);
+    registry->getSystem<RenderSystem>().update(renderer, asset_manager, camera, zoom_level, tile_entities, true);
+
     registry->getSystem<TextRenderSystem>().update(renderer, asset_manager);
     registry->getSystem<CursorSystem>().update(renderer, asset_manager);
 

@@ -9,7 +9,9 @@ scene = {
         {asset_id = "projectile",      file_path = "./assets/sprites/effects/projectiles/projectile_bullet.png"},
         {asset_id = "reload_bullet",   file_path = "./assets/sprites/ui/bullet/bullet_sprite_sheet.png"},
         {asset_id = "revolver_frame",  file_path = "./assets/sprites/ui/bullet/revolver_frame.png"},
-        {asset_id = "bullet_holder",   file_path = "./assets/sprites/ui/bullet/bullet_holder.png"}
+        {asset_id = "bullet_holder",   file_path = "./assets/sprites/ui/bullet/bullet_holder.png"},
+        {asset_id = "flashlight_cone", file_path = "./assets/sprites/masks/cone.png"},
+        {asset_id = "flashlight_source", file_path = "./assets/sprites/masks/circle.png"}
     },
     fonts = {
         [0] = {font_id = "pixel_sleigh_24", file_path = "./assets/fonts/PixelSleigh.ttf", font_size = 24}

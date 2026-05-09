@@ -8,6 +8,7 @@
 #include "../e.c.s./ecs.hpp"
 #include "../sceneManager/sceneLoader.hpp"
 #include "../components/rigidBodyComponent.hpp"
+#include "../components/flashlightComponent.hpp"
 #include "../components/tagComponent.hpp"
 #include "../components/animationComponent.hpp"
 #include "../components/boxColliderComponent.hpp"
@@ -153,6 +154,16 @@ void toggleCameraFollow(Entity entity, bool value) {
 void toggleMouseFollow(Entity entity, bool value) {
     auto& mouse_follow = entity.getComponent<MouseFollowComponent>();
     mouse_follow.is_active = value;
+}
+
+//* Flashlight
+void toggleFlashlight(Entity entity, bool value) {
+    auto& flashlight = entity.getComponent<FlashlightComponent>();
+    if (!value){ // Turn on
+        flashlight.mode = FlashlightMode::CircleOnly;
+    } else { // Turn off
+        flashlight.mode = FlashlightMode::Full;
+    }
 }
 
 //* Sprite 

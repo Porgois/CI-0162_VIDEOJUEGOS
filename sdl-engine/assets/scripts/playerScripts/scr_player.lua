@@ -30,6 +30,7 @@ function set_focus(focus)
     toggle_sprite_flip(this, focus)
     toggle_camera_follow(this, focus)
     toggle_mouse_follow(revolver, focus)
+    toggle_flashlight(this, focus)
 end
 
 function update()
