@@ -5,6 +5,7 @@
 #include <sol/sol.hpp>
 
 #include "../game/game.hpp"
+#include "../e.c.s./ecs.hpp"
 #include "../sceneManager/sceneLoader.hpp"
 #include "../components/rigidBodyComponent.hpp"
 #include "../components/tagComponent.hpp"
@@ -14,7 +15,6 @@
 #include "../components/mouseFollowComponent.hpp"
 #include "../components/transformComponent.hpp"
 #include "../components/spriteComponent.hpp"
-#include "../e.c.s./ecs.hpp"
 
 //* Controls
 bool isActionActive(const std::string& action) {
@@ -145,14 +145,20 @@ void goToScene(const std::string& scene_name) {
 
 //* Camera follow
 void toggleCameraFollow(Entity entity, bool value) {
-     auto& camera_follow = entity.getComponent<CameraFollowComponent>();
-     camera_follow.is_active = value;
+    auto& camera_follow = entity.getComponent<CameraFollowComponent>();
+    camera_follow.is_active = value;
 }
 
 //* Mouse follow
 void toggleMouseFollow(Entity entity, bool value) {
-     auto& mouse_follow = entity.getComponent<MouseFollowComponent>();
-     mouse_follow.is_active = value;
+    auto& mouse_follow = entity.getComponent<MouseFollowComponent>();
+    mouse_follow.is_active = value;
+}
+
+//* Sprite 
+void toggleSpriteFlip(Entity entity, bool value) {
+    auto& sprite = entity.getComponent<SpriteComponent>();
+    sprite.flip_to_mouse = value;
 }
 
 //* Tag
@@ -162,4 +168,14 @@ std::string getTag(Entity entity) {
     }
     return entity.getComponent<TagComponent>().tag;
 }
+
+//* Entity management
+Entity findEntity(std::string entity_name) {
+    return Game::getInstance().registry->findEntity(entity_name);
+}
+
+bool hasEntity(std::string entity_name) {
+    return Game::getInstance().registry->findEntity(entity_name) != NULL;
+}
+
 #endif // LUA_BINDING_HPP

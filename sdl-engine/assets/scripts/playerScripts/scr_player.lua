@@ -1,17 +1,35 @@
-player_velocity = 60
-can_move = true
+local player_velocity = 60
+local can_move = true
 local follow = true
 
-fixed_player_velocity = math.sqrt( (player_velocity * player_velocity) / 2)
+local fixed_player_velocity = math.sqrt( (player_velocity * player_velocity) / 2)
+local revolver
 
-function on_awake()
-    print("On awake running!")
-end
+function start()
+    if has_entity("revolver") then
+            print("has revolver!")
+            revolver = find_entity("revolver")
+    end
+    print("Running player script!")
+end 
 
 function on_collision(other)
     -- Collide with enemies
 
     -- Collide with pickups
+    if (get_tag(other) == "t_ammo_pickup") then
+        if GameState and GameState.add_ammo then
+            GameState.add_ammo(6)
+        end
+        delete_entity(other)
+    end
+
+end
+
+function set_focus(focus)
+    toggle_sprite_flip(this, focus)
+    toggle_camera_follow(this, focus)
+    toggle_mouse_follow(revolver, focus)
 end
 
 function update()
@@ -22,14 +40,12 @@ function update()
 
     if not can_move or (GameState and GameState.reload_menu_open) then
         play_animation(this, "idle")
-        toggle_camera_follow(this, false)
-        toggle_camera_follow(this, false)
+        set_focus(false)
         set_velocity(this, 0, 0)
         return
     end
 
-    toggle_camera_follow(this, true)
-    toggle_camera_follow(this, true)
+    set_focus(true)
     set_velocity(this, 0, 0)
     vel_x = 0
     vel_y = 0

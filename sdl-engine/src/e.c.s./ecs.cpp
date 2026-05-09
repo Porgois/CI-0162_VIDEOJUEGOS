@@ -109,7 +109,24 @@ void Registry::update() {
     entitiesToDelete.clear();
 }
 
+void Registry::registerEntityName(const std::string& name, Entity entity) {
+    namedEntities.emplace(name, entity);
+}
+
+Entity Registry::findEntity(const std::string& name) const {
+    auto it = namedEntities.find(name);
+    if (it == namedEntities.end()) {
+        throw std::runtime_error("Entity not found: " + name);
+    }
+    return it->second;
+}
+
+bool Registry::hasEntity(const std::string& name) const {
+    return namedEntities.find(name) != namedEntities.end();
+}
+
 void Registry::clearAllEntities() {
+    namedEntities.clear();
     for (int i = 0; i < numEntity; i++) {
         removeSystemsEntity(Entity(i));
         entityComponentSignatures[i].reset();

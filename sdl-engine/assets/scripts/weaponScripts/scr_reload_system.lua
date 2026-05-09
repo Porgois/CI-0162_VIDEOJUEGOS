@@ -1,5 +1,6 @@
 local bullet_entity   = dofile("./assets/scripts/entities/e_reload_bullet.lua")
 local drop_zone_entity = dofile("./assets/scripts/entities/e_bullet_drop_zone.lua")
+local starting_ammo = 2
 
 local bullets      = {}
 local bullet_homes = {}
@@ -34,6 +35,7 @@ function start()
     GameState.dropped_bullet = nil
     GameState.spend_casing = spend_casing
     GameState.set_reload_menu = set_reload_menu
+    GameState.add_ammo = add_ammo
     set_position(this, -1000, -1000)
 end
 
@@ -85,7 +87,7 @@ function set_reload_menu(open)
         GameState.reload_menu_open = true
         if not menu_initialized then
             spawn_drop_zones(ZONE_COUNT)
-            place_bullets(12)
+            place_bullets(starting_ammo)
             menu_initialized = true
         end
         show_reload_entities()
@@ -138,6 +140,33 @@ function place_bullets(n)
     end
 end
 
+function append_bullets(n)
+    local start_index = #bullets
+    for i = 0, n - 1 do
+        local grid_i = start_index + i
+        local col = grid_i % GRID_COLS
+        local row = math.floor(grid_i / GRID_COLS)
+        local x = GRID_ORIGIN_X + col * CELL_WIDTH
+        local y = GRID_ORIGIN_Y + row * CELL_HEIGHT
+        local bullet = spawn_entity(bullet_entity)
+
+        -- Register home position into saved state directly
+        saved_bullet_positions[bullet] = { x = x, y = y }
+        bullet_homes[grid_i + 1] = { x = x, y = y }
+
+        -- Spawn hidden; show_reload_entities will place them correctly when menu opens
+        if GameState.reload_menu_open then
+            set_position(bullet, x, y)
+        else
+            set_position(bullet, -10000, -10000)
+        end
+
+        table.insert(bullets, bullet)
+        table.insert(bullet_homes, { x = x, y = y })
+        table.insert(all_bullets, bullet)
+    end
+end
+
 function find_home(bullet)
     for i, b in ipairs(bullets) do
         if b == bullet then
@@ -153,8 +182,11 @@ function reorder_grid()
         local row = math.floor(i / GRID_COLS)
         local x = GRID_ORIGIN_X + col * CELL_WIDTH
         local y = GRID_ORIGIN_Y + row * CELL_HEIGHT
-        set_position(bullets[i + 1], x, y)
         bullet_homes[i + 1] = { x = x, y = y }
+        saved_bullet_positions[bullets[i + 1]] = { x = x, y = y }
+        if GameState.reload_menu_open then
+            set_position(bullets[i + 1], x, y)
+        end
     end
 end
 
@@ -327,6 +359,25 @@ function mark_slot_spent(zone_index, slot_index)
     play_animation(slot.bullet, "empty")
     print("[RELOAD] slot " .. slot_index .. " in zone " .. zone_index .. " marked spent")
 end
+
+function add_ammo(n)
+    if not menu_initialized then
+        spawn_drop_zones(ZONE_COUNT)
+        place_bullets(starting_ammo)
+        menu_initialized = true
+        hide_reload_entities()
+    end
+
+    local max = GRID_COLS * GRID_ROWS
+    local available = max - #bullets
+    local to_spawn = math.min(n, available)
+
+    if to_spawn > 0 then
+        append_bullets(to_spawn)
+        reorder_grid()
+    end
+end
+
 
 function clear_bullets()
     for _, bullet in ipairs(all_bullets) do

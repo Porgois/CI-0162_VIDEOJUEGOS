@@ -685,6 +685,7 @@ Entity SceneLoader::createEntity(sol::state& lua, const sol::table& entity,
     sol::optional<std::string> has_name = entity["name"];
     if (has_name != sol::nullopt) {
         named_entities.emplace(has_name.value(), new_entity);
+        registry->registerEntityName(has_name.value(), new_entity);
     }
 
     sol::optional<sol::table> has_components = entity["components"];

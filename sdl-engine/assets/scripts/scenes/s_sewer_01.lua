@@ -4,6 +4,7 @@ scene = {
         {asset_id = "cursor",          file_path = "./assets/ui/cursors/cursor.png"},
         {asset_id = "player",          file_path = "./assets/sprites/characters/player/player_sprite_sheet.png"},
         {asset_id = "revolver",        file_path = "./assets/sprites/weapons/revolver.png"},
+        {asset_id = "ammo_pickup",     file_path = "./assets/sprites/weapons/ammo_pickup.png"},
         {asset_id = "terrain_sewers",  file_path = "./assets/sprites/tiles/sewers.png"},
         {asset_id = "projectile",      file_path = "./assets/sprites/effects/projectiles/projectile_bullet.png"},
         {asset_id = "reload_bullet",   file_path = "./assets/sprites/ui/bullet/bullet_sprite_sheet.png"},
@@ -25,7 +26,9 @@ scene = {
             dofile("./assets/scripts/entities/e_reload_screen.lua"),
             dofile("./assets/scripts/entities/e_player.lua"),
             dofile("./assets/scripts/entities/e_revolver.lua"),
-            dofile("./assets/scripts/entities/e_bullet_holder.lua")
+            dofile("./assets/scripts/entities/e_bullet_holder.lua"),
+            dofile("./assets/scripts/entities/e_ammo_pickup.lua")
+
             
     }
 }

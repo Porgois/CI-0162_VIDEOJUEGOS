@@ -14,6 +14,6 @@ scene = {
     entities = {
         [0] = dofile("./assets/scripts/entities/e_cursor.lua"),
             dofile("./assets/scripts/entities/e_reload_screen.lua"),
-            --dofile("./assets/scripts/entities/e_bullet_frame.lua")
+            dofile("./assets/scripts/entities/e_bullet_frame.lua")
     }
 }

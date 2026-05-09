@@ -20,59 +20,57 @@ class MouseFollowSystem : public System {
         }
 
         void update(SDL_Rect& camera, float zoom_level) {
-            int mouse_x, mouse_y;
-            SDL_GetMouseState(&mouse_x, &mouse_y);
-
             for (auto& entity : getSystemEntities()) {
-                auto& transform = entity.getComponent<TransformComponent>();
+                auto& transform  = entity.getComponent<TransformComponent>();
                 auto& mouse_follow = entity.getComponent<MouseFollowComponent>();
                 auto& sprite = entity.getComponent<SpriteComponent>();
                 auto& child_of = entity.getComponent<ChildOfComponent>();
-               
-
+                
                 auto& parent_transform = child_of.parent.getComponent<TransformComponent>();
                 auto& parent_sprite = child_of.parent.getComponent<SpriteComponent>();
-                float cx = (parent_transform.position.x + parent_sprite.width / 2) * zoom_level - camera.x;
+
+                float cx = (parent_transform.position.x + parent_sprite.width  / 2) * zoom_level - camera.x;
                 float cy = (parent_transform.position.y + parent_sprite.height / 2) * zoom_level - camera.y;
 
-                float angle = atan2f(mouse_y - cy, mouse_x - cx) * (180.0f / M_PI);
-                float orbit_radius = mouse_follow.orbit_radius;
-                float rad = angle * (M_PI / 180.0f);
-                float deadzone = 0.15f;
+                if (mouse_follow.is_active) {
+                    int mouse_x, mouse_y;
+                    SDL_GetMouseState(&mouse_x, &mouse_y);
 
-                if (!mouse_follow.is_active) {
-                    return;
+                    // Update and cache the angle only while active
+                    mouse_follow.last_angle = atan2f(mouse_y - cy, mouse_x - cx) * (180.0f / M_PI);
+
+                    // Flip & rotation
+                    float deadzone = 0.15f;
+                    if (mouse_x > cx + deadzone) {
+                        sprite.flip = SDL_FLIP_NONE;
+                        transform.rotation = mouse_follow.last_angle;
+                    } else if (mouse_x < cx - deadzone) {
+                        sprite.flip = SDL_FLIP_HORIZONTAL;
+                        float mirrored = atan2f(-(mouse_y - cy), mouse_x - cx) * (180.0f / M_PI);
+                        transform.rotation = 180.0f - mirrored;
+                    }
+
+                    // Dynamic z-index
+                    if (mouse_y < cy) {
+                        sprite.z_index = 9;
+                    } else {
+                        sprite.z_index = 10;
+                    }
                 }
 
-                // Position
-                transform.position.x = (cx + camera.x) / zoom_level + cosf(rad) * orbit_radius;
-                transform.position.y = (cy + camera.y) / zoom_level + sinf(rad) * orbit_radius;
-
-                // Flip & rotation
-                if (mouse_x > cx + deadzone) {
-                    sprite.flip = SDL_FLIP_NONE;
-                    transform.rotation = angle;
-                } else if (mouse_x < cx - deadzone) {
-                    sprite.flip = SDL_FLIP_HORIZONTAL;
-                    float mirrored = atan2f(-(mouse_y - cy), mouse_x - cx) * (180.0f / M_PI);
-                    transform.rotation = 180.0f - mirrored;
-                }
-
-                // Dynamic z-index
-                if (mouse_y < cy) {
-                    sprite.z_index = 9;
-                } else if (mouse_y > cy) {
-                    sprite.z_index = 10;
-                }
+                // Always reapply position from last_angle (frozen when inactive, live when active)
+                float rad = mouse_follow.last_angle * (M_PI / 180.0f);
+                transform.position.x = (cx + camera.x) / zoom_level + cosf(rad) * mouse_follow.orbit_radius;
+                transform.position.y = (cy + camera.y) / zoom_level + sinf(rad) * mouse_follow.orbit_radius;
             }
         }
 
         void debugRender(SDL_Renderer* renderer, SDL_Rect& camera, float zoom_level) {
             for (auto& entity : getSystemEntities()) {
-                auto& transform        = entity.getComponent<TransformComponent>();
-                auto& child_of         = entity.getComponent<ChildOfComponent>();
+                auto& transform  = entity.getComponent<TransformComponent>();
+                auto& child_of = entity.getComponent<ChildOfComponent>();
                 auto& parent_transform = child_of.parent.getComponent<TransformComponent>();
-                auto& parent_sprite    = child_of.parent.getComponent<SpriteComponent>();
+                auto& parent_sprite = child_of.parent.getComponent<SpriteComponent>();
 
                 // Red dot = rotation origin (pivot)
                 float cx = (parent_transform.position.x + parent_sprite.width  * 0.5f) * zoom_level - camera.x;

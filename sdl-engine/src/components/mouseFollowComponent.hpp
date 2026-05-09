@@ -6,7 +6,8 @@
 
 struct MouseFollowComponent {
     float orbit_radius;
-    bool is_active = true;
+    bool is_active = false;
+    float last_angle = 0.0f;
     MouseFollowComponent() : orbit_radius(0.0f) {}
     MouseFollowComponent(float orbit_radius) : orbit_radius(orbit_radius) {}
 };

@@ -32,6 +32,9 @@ public:
         lua.set_function("play_animation", setAnimation);
         lua.set_function("toggle_camera_follow", toggleCameraFollow);
         lua.set_function("toggle_mouse_follow", toggleMouseFollow);
+        lua.set_function("toggle_sprite_flip", toggleSpriteFlip);
+        lua.set_function("find_entity", findEntity);
+        lua.set_function("has_entity", hasEntity);
 
         // Setters
         lua.set_function("set_velocity", setVelocity);

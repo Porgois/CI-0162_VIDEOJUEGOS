@@ -96,51 +96,56 @@ class Registry {
 
         std::set<Entity> entitiesToAdd;
         std::set<Entity> entitiesToDelete;
-
+        std::unordered_map<std::string, Entity> namedEntities;
         std::deque<int> freeIds;
-
+         
     public:
         Registry();
         ~Registry();
 
-    void update();
-    
-    // Entity Management
-    Entity createEntity();
-    void destroyEntity(Entity entity);
+        void update();
+        
+        // Entity Management
+        Entity createEntity();
+        void destroyEntity(Entity entity);
 
-    // Component Management
-    template <typename TComponent, typename... TArgs>
-    void addComponent(Entity entity, TArgs&&... args);
+        // Component Management
+        template <typename TComponent, typename... TArgs>
+        void addComponent(Entity entity, TArgs&&... args);
 
-    template <typename TComponent> 
-    void removeComponent(Entity entity);
+        template <typename TComponent> 
+        void removeComponent(Entity entity);
 
-    template <typename TComponent>
-    bool hasComponent(Entity entity) const;
+        template <typename TComponent>
+        bool hasComponent(Entity entity) const;
 
-    template <typename TComponent>
-    TComponent& getComponent(Entity entity) const;
+        template <typename TComponent>
+        TComponent& getComponent(Entity entity) const;
 
-    // System Management
-    template <typename TSystem, typename... TArgs>
-    void addSystem(TArgs&&... args);
+        // System Management
+        template <typename TSystem, typename... TArgs>
+        void addSystem(TArgs&&... args);
 
-    template <typename TSystem> 
-    void removeSystem();
+        template <typename TSystem> 
+        void removeSystem();
 
-    template <typename TSystem>
-    bool hasSystem() const;
+        template <typename TSystem>
+        bool hasSystem() const;
 
-    template <typename TSystem>
-    TSystem& getSystem() const;
+        template <typename TSystem>
+        TSystem& getSystem() const;
 
-    // Add or remove entities from systems
-    void addSystemsEntity(Entity entity);
-    void removeSystemsEntity(Entity entity);
+        // Add or remove entities from systems
+        void addSystemsEntity(Entity entity);
+        void removeSystemsEntity(Entity entity);
 
-    // Reset registry
-    void clearAllEntities();
+        // Find entity
+        void registerEntityName(const std::string& name, Entity entity);
+        Entity findEntity(const std::string& name) const;
+        bool hasEntity(const std::string& name) const;
+
+        // Reset registry
+        void clearAllEntities();
 };
 
 template <typename TComponent>
