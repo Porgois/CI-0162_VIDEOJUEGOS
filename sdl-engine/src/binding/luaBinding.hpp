@@ -4,6 +4,8 @@
 #include <string>
 #include <sol/sol.hpp>
 
+#include "../systems/cameraMovementSystem.hpp"
+
 #include "../game/game.hpp"
 #include "../e.c.s./ecs.hpp"
 #include "../sceneManager/sceneLoader.hpp"
@@ -186,7 +188,18 @@ Entity findEntity(std::string entity_name) {
 }
 
 bool hasEntity(std::string entity_name) {
-    return Game::getInstance().registry->findEntity(entity_name) != NULL;
+    return Game::getInstance().registry->hasEntity(entity_name);
 }
 
+//* Component alteration
+void removeBoxCollider(Entity entity) {
+    entity.removeComponent<BoxColliderComponent>();
+}
+
+//* Misc
+void shakeCamera(float duration, float intensity, float frequency) {
+    Game::getInstance().registry->getSystem<CameraMovementSystem>()
+        .shake(duration, intensity, frequency);
+}
+    
 #endif // LUA_BINDING_HPP

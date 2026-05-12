@@ -1,6 +1,6 @@
 local bullet_entity   = dofile("./assets/scripts/entities/e_reload_bullet.lua")
 local drop_zone_entity = dofile("./assets/scripts/entities/e_bullet_drop_zone.lua")
-local starting_ammo = 2
+local starting_ammo = 3
 
 local bullets      = {}
 local bullet_homes = {}

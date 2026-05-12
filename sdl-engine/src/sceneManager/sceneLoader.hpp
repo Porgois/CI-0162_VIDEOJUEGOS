@@ -57,6 +57,8 @@ class SceneLoader {
 
         static void loadColliders(std::unique_ptr<Registry>& registry, tinyxml2::XMLElement* object_group);
 
+        static void loadEnemies(std::unique_ptr<Registry>& registry, sol::state& lua, tinyxml2::XMLElement* object_group);
+
         static void loadFlashlight(Entity& entity, const sol::table& components);
 
         static void loadChildOf(Entity& entity, const sol::table& components, \
@@ -82,7 +84,7 @@ class SceneLoader {
         int columns);
 
         void loadMap(SDL_Renderer* renderer, const sol::table map, std::unique_ptr<Registry>& registry, \
-            std::unique_ptr<AssetManager>& asset_manager);
+            std::unique_ptr<AssetManager>& asset_manager, sol::state& lua);
 
         void loadLayer(SDL_Renderer* renderer, std::unique_ptr<Registry>& registry, \
             tinyxml2::XMLElement* layer, int tile_width, int tile_height, \

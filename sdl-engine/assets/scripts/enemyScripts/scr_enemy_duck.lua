@@ -1,0 +1,245 @@
+-- Possible entity spawns
+local ammo_pickup_entity = dofile("./assets/scripts/entities/e_ammo_pickup.lua")
+
+-- General values
+local speed = 35
+local current_health = 3
+local is_dead = false
+local attack_damage = 1
+local attack_range = 20
+local effective_damage_range = 30
+local detection_range = 80
+local patrol_range = 30
+local attack_delay = 0.5
+local attack_delay_timer = 0
+local attack_hit = false
+
+-- Animation
+local animation_timer = 0
+local damage_anim_duration = 0.25
+local attack_duration = 0.5
+local attack_timer = 0
+
+-- Patrol
+local origin_x, origin_y = 0, 0
+local patrol_target_x, patrol_target_y = 0, 0
+local patrol_wait = 0
+local patrol_wait_duration = 2.0
+
+-- Death chance
+local on_death_chance = 1.0 -- 100% chance
+local on_death_triggered = false
+
+local function flip_towards(dx)
+    set_flip(this, dx < 0)
+end
+
+-- State machine
+local state = "idle"
+local states = {}
+
+states["idle"] = {
+    enter = function()
+        set_velocity(this, 0, 0)
+    end,
+    update = function()
+        play_animation(this, "idle")
+        if can_detect_player() then
+            transition_to("pursue")
+            return
+        end
+        transition_to("patrol")
+    end
+}
+
+states["patrol"] = {
+    enter = function()
+        patrol_wait = patrol_wait_duration
+        pick_patrol_target()
+    end,
+    update = function()
+        if can_detect_player() then
+            transition_to("pursue")
+            return
+        end
+
+        if patrol_wait > 0 then
+            patrol_wait = patrol_wait - get_delta_time()
+            play_animation(this, "idle")
+            return
+        end
+
+        local my_x, my_y = get_position(this)
+        local dx = patrol_target_x - my_x
+        local dy = patrol_target_y - my_y
+        local dist = math.sqrt(dx * dx + dy * dy)
+
+        if dist < 4 then
+            set_velocity(this, 0, 0)
+            patrol_wait = patrol_wait_duration
+            pick_patrol_target()
+            return
+        end
+
+        set_velocity(this, (dx / dist) * speed, (dy / dist) * speed)
+        flip_towards(dx)
+        play_animation(this, "walk")
+    end
+}
+
+states["pursue"] = {
+    enter = function() end,
+    update = function()
+        if not has_entity("player") then
+            transition_to("patrol")
+            return
+        end
+        local dist = distance_to_player()
+        if dist > detection_range then
+            transition_to("patrol")
+            return
+        end
+        if dist <= attack_range then
+            transition_to("attack")
+            return
+        end
+        pursue_player()
+        play_animation(this, "walk")
+    end
+}
+
+states["attack"] = {
+    enter = function()
+        set_velocity(this, 0, 0)
+        play_animation(this, "attack")
+        attack_timer = attack_duration
+        attack_delay_timer = attack_delay
+        attack_hit = false
+    end,
+    update = function()
+        attack_timer = attack_timer - get_delta_time()
+
+        if not attack_hit then
+            attack_delay_timer = attack_delay_timer - get_delta_time()
+            if attack_delay_timer <= 0 then
+                attack()
+                attack_hit = true
+            end
+        end
+
+        if attack_timer <= 0 then
+            if not has_entity("player") then
+                transition_to("patrol")
+                return
+            end
+            local dist = distance_to_player()
+            if dist <= attack_range then
+                transition_to("attack")
+            else
+                transition_to("pursue")
+            end
+        end
+    end
+}
+
+states["dead"] = {
+    enter = function()
+        set_velocity(this, 0, 0)
+        play_animation(this, "death")
+        if not on_death_triggered then
+            on_death_triggered = true
+            if math.random() <= on_death_chance then
+                on_death()
+            end
+        end
+    end,
+    update = function()
+        -- do nothing
+    end
+}
+
+function on_death()
+    random_drop()
+    remove_box_collider(this)
+end
+
+function transition_to(new_state)
+    if states[new_state] then
+        state = new_state
+        states[new_state].enter()
+    end
+end
+
+function can_detect_player()
+    if not has_entity("player") then return false end
+    return distance_to_player() <= detection_range
+end
+
+function pick_patrol_target()
+    patrol_target_x = origin_x + (math.random() * 2 - 1) * patrol_range
+    patrol_target_y = origin_y + (math.random() * 2 - 1) * patrol_range
+end
+
+function attack()
+    print("[LUA] ENEMY ATTEMPTS ATTACK!")
+    if distance_to_player() <= effective_damage_range then
+        local player = find_entity("player")
+        call_function(player, "take_damage", attack_damage)
+    end
+end
+
+function random_drop()
+    print("[ENEMY SCRIPT] DROPPED RANDOM ITEM!")
+    local ammo_drop = spawn_entity(ammo_pickup_entity)
+    local x_pos, y_pos = get_position(this)
+    x_pos = x_pos + 10 -- spawn offset
+    y_pos = y_pos + 25 -- spawn offset
+    set_position(ammo_drop, x_pos, y_pos) -- spawn position
+end
+
+function distance_to_player()
+    local player = find_entity("player")
+    local my_x, my_y = get_position(this)
+    local player_x, player_y = get_position(player)
+    local dx = player_x - my_x
+    local dy = player_y - my_y
+    return math.sqrt(dx * dx + dy * dy)
+end
+
+function pursue_player()
+    local player = find_entity("player")
+    local my_x, my_y = get_position(this)
+    local player_x, player_y = get_position(player)
+    local dx = player_x - my_x
+    local dy = player_y - my_y
+    local dist = math.sqrt(dx * dx + dy * dy)
+    if dist == 0 then return end
+    set_velocity(this, (dx / dist) * speed, (dy / dist) * speed)
+    flip_towards(dx)
+end
+
+function take_damage(amount)
+    if state == "dead" then return end
+    set_velocity(this, 0, 0)
+    current_health = current_health - amount
+    if current_health <= 0 then
+        transition_to("dead")
+    else
+        animation_timer = damage_anim_duration
+    end
+end
+
+function update()
+    if animation_timer > 0 then
+        animation_timer = animation_timer - get_delta_time()
+        play_animation(this, "damage")
+        return
+    end
+    states[state].update()
+end
+
+function start()
+    origin_x, origin_y = get_position(this)
+    pick_patrol_target()
+    transition_to("patrol")
+end

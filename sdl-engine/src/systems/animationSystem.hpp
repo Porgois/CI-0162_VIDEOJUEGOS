@@ -14,24 +14,28 @@ class AnimationSystem : public System {
             requireComponent<SpriteComponent>();
         }
 
-        void update() {
-            for (auto entity : getSystemEntities()) {
-                auto& animation = entity.getComponent<AnimationComponent>();
-                auto& sprite = entity.getComponent<SpriteComponent>();
+    void update() {
+        for (auto entity : getSystemEntities()) {
+            auto& animation = entity.getComponent<AnimationComponent>();
+            auto& sprite = entity.getComponent<SpriteComponent>();
+            auto& clip = animation.currentClip();
 
-                auto& clip = animation.currentClip();
-                int frame = static_cast<int>( (SDL_GetTicks() - animation.start_time) \
-                    * clip.speed / 1000.0 ) % clip.frame_count;
+            int raw_frame = static_cast<int>(
+                (SDL_GetTicks() - animation.start_time) * clip.speed / 1000.0
+            );
 
-                if (!clip.loops && frame == clip.frame_count - 1) {
-                    frame = clip.frame_count - 1; // freeze on the last frame
-                }
-
-                animation.current_frame = frame;
-                sprite.srcRect.x = frame * sprite.width;
-                sprite.srcRect.y = clip.row * sprite.height;
+            int frame;
+            if (!clip.loop) {
+                frame = std::min(raw_frame, clip.frame_count - 1); // clamp to last frame
+            } else {
+                frame = raw_frame % clip.frame_count; // wrap around
             }
+
+            animation.current_frame = frame;
+            sprite.srcRect.x = frame * sprite.width;
+            sprite.srcRect.y = clip.row * sprite.height;
         }
+    }
 };
 
 #endif // ANIMATION_SYSTEM_HPP

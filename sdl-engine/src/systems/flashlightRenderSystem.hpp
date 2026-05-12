@@ -15,25 +15,22 @@
 class FlashlightRenderSystem : public System {
     private:
         SDL_Texture* darkness_texture = nullptr;
-        // screen width and height
+        SDL_Texture* scratch_texture = nullptr;
         int screen_w;
         int screen_h;
-        // blend mode
         SDL_BlendMode punch_blend;
         int screen_color = 200;
 
     public:
         FlashlightRenderSystem(SDL_Renderer* renderer, int screen_w, int screen_h) :
             screen_w(screen_w), screen_h(screen_h) {
-            // Requirements
             requireComponent<TransformComponent>();
             requireComponent<FlashlightComponent>();
 
-            // Darkness overlay texture (black)
             darkness_texture = SDL_CreateTexture(
                 renderer,
                 SDL_PIXELFORMAT_RGBA8888,
-                SDL_TEXTUREACCESS_TARGET, // render target
+                SDL_TEXTUREACCESS_TARGET,
                 screen_w,
                 screen_h
             );
@@ -43,6 +40,20 @@ class FlashlightRenderSystem : public System {
             }
 
             SDL_SetTextureBlendMode(darkness_texture, SDL_BLENDMODE_BLEND);
+
+            scratch_texture = SDL_CreateTexture(
+                renderer,
+                SDL_PIXELFORMAT_RGBA8888,
+                SDL_TEXTUREACCESS_TARGET,
+                screen_w,
+                screen_h
+            );
+
+            if (!scratch_texture) {
+                SDL_Log("scratch_texture failed: %s", SDL_GetError());
+            }
+
+            SDL_SetTextureBlendMode(scratch_texture, SDL_BLENDMODE_BLEND);
 
             punch_blend = SDL_ComposeCustomBlendMode(
                 SDL_BLENDFACTOR_ZERO,
@@ -58,14 +69,27 @@ class FlashlightRenderSystem : public System {
             if (darkness_texture) {
                 SDL_DestroyTexture(darkness_texture);
             }
+            if (scratch_texture) {
+                SDL_DestroyTexture(scratch_texture);
+            }
         }
-        
+
+        SDL_Texture* getDarknessTexture() {
+            return darkness_texture;
+        }
+
+        SDL_Texture* getScratchTexture() {
+            return scratch_texture;
+        }
+
         inline float angleToMouse(float cx, float cy, int mouse_x, int mouse_y) {
             SDL_GetMouseState(&mouse_x, &mouse_y);
             return atan2f(mouse_y - cy, mouse_x - cx) * (180.0f / M_PI);
         }
 
-        void update(SDL_Renderer* renderer, std::unique_ptr<AssetManager>& asset_manager, SDL_Rect& camera, float zoom_level) {
+        void buildDarkness(SDL_Renderer* renderer, std::unique_ptr<AssetManager>& asset_manager,
+            SDL_Rect& camera, float zoom_level) {
+
             SDL_SetRenderTarget(renderer, darkness_texture);
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             SDL_RenderClear(renderer);
@@ -73,18 +97,16 @@ class FlashlightRenderSystem : public System {
             for (auto& entity : getSystemEntities()) {
                 const auto& transform = entity.getComponent<TransformComponent>();
                 auto& flashlight = entity.getComponent<FlashlightComponent>();
-                
-                // Flicker
+
                 if (flashlight.flicker_enabled) {
                     float target = 0.85f + (rand() % 100 / 100.0f) * 0.15f;
-                    flashlight.flicker_intensity += (target - flashlight.flicker_intensity) \
+                    flashlight.flicker_intensity += (target - flashlight.flicker_intensity)
                         * flashlight.flicker_speed;
                 }
 
                 int mouse_x, mouse_y;
                 SDL_GetMouseState(&mouse_x, &mouse_y);
 
-                // Screen-space position (apply camera offset)
                 float cx = (transform.position.x + flashlight.origin_offset_x) * zoom_level - camera.x;
                 float cy = (transform.position.y + flashlight.origin_offset_y) * zoom_level - camera.y;
 
@@ -95,11 +117,9 @@ class FlashlightRenderSystem : public System {
 
                 float angle = angleToMouse(cx, cy, mouse_x, mouse_y);
 
-                // Source circle punch
                 if (flashlight.mode == FlashlightMode::Full || flashlight.mode == FlashlightMode::CircleOnly) {
                     SDL_Texture* circle_texture = asset_manager->getTexture(flashlight.circle_texture_id);
                     SDL_SetTextureBlendMode(circle_texture, punch_blend);
-
                     int flicker_radius = static_cast<int>(flashlight.source_radius * zoom_level * flashlight.flicker_intensity);
                     SDL_Rect circle_dst = {
                         static_cast<int>(cx) - flicker_radius,
@@ -110,13 +130,11 @@ class FlashlightRenderSystem : public System {
                     SDL_RenderCopy(renderer, circle_texture, nullptr, &circle_dst);
                 }
 
-                // Cone punch
                 if (flashlight.mode == FlashlightMode::Full || flashlight.mode == FlashlightMode::ConeOnly) {
                     SDL_Point cone_origin = {
                         static_cast<int>(flashlight.cone_origin_x * final_scale * zoom_level),
                         static_cast<int>(flashlight.cone_origin_y * final_scale * zoom_level)
                     };
-
                     float cone_end_offset = flashlight.cone_end_offset * (dist / (flashlight.reach * zoom_level));
                     SDL_Rect cone_dst = {
                         static_cast<int>(cx) - static_cast<int>(flashlight.cone_origin_x * final_scale * zoom_level),
@@ -129,8 +147,13 @@ class FlashlightRenderSystem : public System {
                     SDL_RenderCopyEx(renderer, cone_texture, nullptr, &cone_dst, angle, &cone_origin, SDL_FLIP_NONE);
                 }
             }
-            // Composite darkness overlay onto screen
+
             SDL_SetRenderTarget(renderer, nullptr);
+        }
+
+        void compositeDarkness(SDL_Renderer* renderer) {
+            SDL_SetRenderTarget(renderer, nullptr);
+            SDL_SetTextureBlendMode(darkness_texture, SDL_BLENDMODE_BLEND);
             SDL_SetTextureAlphaMod(darkness_texture, screen_color);
             SDL_RenderCopy(renderer, darkness_texture, nullptr, nullptr);
         }

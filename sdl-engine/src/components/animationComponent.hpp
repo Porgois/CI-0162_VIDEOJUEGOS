@@ -7,7 +7,7 @@ struct AnimationClip {
     int row;
     int frame_count;
     int speed;
-    int loops;
+    int loop;
 };
 
 struct AnimationComponent {

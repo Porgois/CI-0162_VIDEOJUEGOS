@@ -64,6 +64,7 @@ void Game::init() {
         std::cerr << "[GAME] Could not initialize SDL_TTF!" << std::endl;
         return;
     }
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
     // Texture filtering
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
@@ -240,7 +241,7 @@ void Game::update() {
     registry->getSystem<PhysicsSystem>().update();
     registry->getSystem<MovementSystem>().update(delta_time);
     registry->getSystem<ChildOfSystem>().update();
-    registry->getSystem<CameraMovementSystem>().update(camera, zoom_level);
+    registry->getSystem<CameraMovementSystem>().update(camera, zoom_level, delta_time);
     registry->getSystem<MouseFollowSystem>().update(camera, zoom_level);
     registry->getSystem<BoxCollisionSystem>().update(event_manager, lua);
     registry->getSystem<CircleCollisionSystem>().update(event_manager);
@@ -252,9 +253,22 @@ void Game::render() {
     SDL_RenderClear(renderer);
 
     auto tile_entities = registry->getSystem<TileRenderSystem>().getEntities();
-    registry->getSystem<RenderSystem>().update(renderer, asset_manager, camera, zoom_level, tile_entities, false);
-    registry->getSystem<FlashlightRenderSystem>().update(renderer, asset_manager, camera, zoom_level);
-    registry->getSystem<RenderSystem>().update(renderer, asset_manager, camera, zoom_level, tile_entities, true);
+
+    // Darkness
+    registry->getSystem<FlashlightRenderSystem>().buildDarkness(renderer, asset_manager, camera, zoom_level);
+
+    //Full pass (lit and unlit sprites)
+    registry->getSystem<RenderSystem>().update(renderer, asset_manager, camera, zoom_level, \
+        tile_entities, false, \
+        registry->getSystem<FlashlightRenderSystem>().getDarknessTexture(), \
+        registry->getSystem<FlashlightRenderSystem>().getScratchTexture());
+
+    // Composite darkness
+    registry->getSystem<FlashlightRenderSystem>().compositeDarkness(renderer);
+
+    // Unlit pass
+    registry->getSystem<RenderSystem>().update(renderer, asset_manager, camera, zoom_level, \
+        tile_entities, true);
 
     registry->getSystem<TextRenderSystem>().update(renderer, asset_manager);
     registry->getSystem<CursorSystem>().update(renderer, asset_manager);

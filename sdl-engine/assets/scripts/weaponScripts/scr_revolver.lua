@@ -8,7 +8,7 @@ local max_ammo = 6
 local current_ammo = 6
 
 -- Cooldown
-local shoot_cooldown = 0.3
+local shoot_cooldown = 0.6
 local cooldown_timer = 0.0
 
 -- Offset
@@ -44,6 +44,7 @@ function shoot_projectile()
     set_position(projectile, spawn_x, spawn_y)
     set_rotation(projectile, math.deg(angle))
     set_velocity(projectile, math.cos(angle) * projectile_speed, math.sin(angle) * projectile_speed)
+    shake_camera(0.4, 3.0, 30.0)
 
     can_shoot = false
     cooldown_timer = shoot_cooldown

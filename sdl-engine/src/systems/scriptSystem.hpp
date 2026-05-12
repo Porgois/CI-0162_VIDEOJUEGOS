@@ -9,8 +9,9 @@
 
 class ScriptSystem : public System {
 public:
-    // Add this global flag to sceneLoader.hpp or game.hpp
     bool g_is_spawning = false;
+    std::unordered_map<int, sol::environment> entity_environments;
+
     ScriptSystem() {
         requireComponent<ScriptComponent>();
     }
@@ -36,11 +37,18 @@ public:
         lua.set_function("toggle_flashlight", toggleFlashlight);
         lua.set_function("find_entity", findEntity);
         lua.set_function("has_entity", hasEntity);
+        lua.set_function("remove_box_collider", removeBoxCollider);
+        lua.set_function("shake_camera", shakeCamera);
 
         // Setters
         lua.set_function("set_velocity", setVelocity);
         lua.set_function("set_position", setPosition);
         lua.set_function("set_rotation", setRotation);
+        lua.set_function("set_flip", [&registry](Entity entity, bool flipped) {
+            auto& sprite = entity.getComponent<SpriteComponent>();
+            sprite.flip_to_mouse = false; // disable mouse control
+            sprite.flip = flipped ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
+        });
 
         // Getters
         lua.set_function("get_velocity", getVelocity);
@@ -54,6 +62,29 @@ public:
         lua.set_function("get_collider_offset", getColliderOffset);
         lua.set_function("get_tag", getTag);
         lua.set_function("is_flipped", getFlip);
+
+        // Generic function-calling
+        lua.set_function("call_function", [this](Entity entity, const std::string& func_name, sol::variadic_args args) {
+            auto it = entity_environments.find(entity.getId());
+            if (it == entity_environments.end()) {
+                std::cout << "[SCRIPT] call_function: no environment found for entity" << std::endl;
+                return;
+            }
+
+            sol::environment& env = it->second;
+            sol::protected_function func = env[func_name];
+
+            if (!func.valid()) {
+                std::cout << "[SCRIPT] call_function: function '" << func_name << "' not found" << std::endl;
+                return;
+            }
+
+            auto result = func(args);
+            if (!result.valid()) {
+                sol::error err = result;
+                std::cout << "[SCRIPT] call_function error: " << err.what() << std::endl;
+            }
+        });
 
         // Delta time
         lua.set_function("get_delta_time", [&game = Game::getInstance()]() {
@@ -83,6 +114,7 @@ public:
     }
     
     void start(sol::state& lua) {
+        
         for (auto entity : getSystemEntities()) {
             auto& script = entity.getComponent<ScriptComponent>();
             if (script.started) continue;
@@ -93,6 +125,7 @@ public:
                 sol::environment env = sol::get_environment(script.start);
                 if (env.valid()) {
                     env["this"] = entity;
+                    entity_environments[entity.getId()] = env;
                 } else {
                     lua["this"] = entity;
                 }
@@ -112,8 +145,9 @@ public:
                 sol::environment env = sol::get_environment(script.update);
                 if (env.valid()) {
                     env["this"] = entity;
+                    entity_environments[entity.getId()] = env;
                 } else {
-                    lua["this"] = entity;  // fallback
+                    lua["this"] = entity;
                 }
                 auto result = script.update();
                 if (!result.valid()) {

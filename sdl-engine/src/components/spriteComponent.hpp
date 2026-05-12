@@ -12,6 +12,7 @@ struct SpriteComponent {
     SDL_Rect srcRect;
     bool is_ui = false;
     bool is_unlit = false;
+    bool is_lit_only = false;
     
     // Sprite flipping
     SDL_RendererFlip flip = SDL_FLIP_NONE;
@@ -21,7 +22,8 @@ struct SpriteComponent {
     int z_index = 0;
 
     SpriteComponent(
-        const std::string& textureId = "none", int width = 0, int height = 0, int srcRectX = 0, int srcRectY = 0, int z_index = 0, SDL_Point pivot = {0, 0}, bool flip_to_mouse = false, bool is_ui = false, bool is_unlit = false) {
+        const std::string& textureId = "none", int width = 0, int height = 0, int srcRectX = 0, int srcRectY = 0, int z_index = 0, SDL_Point pivot = {0, 0}, \
+            bool flip_to_mouse = false, bool is_ui = false, bool is_unlit = false, bool is_lit_only = false) {
         this->textureId = textureId;
         this->width = width;
         this->height = height;
@@ -31,6 +33,7 @@ struct SpriteComponent {
         this->flip_to_mouse = flip_to_mouse;
         this->is_ui = is_ui;
         this->is_unlit = is_unlit;
+        this->is_lit_only = is_lit_only;
     }
 };
 

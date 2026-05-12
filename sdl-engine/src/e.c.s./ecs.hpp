@@ -189,6 +189,16 @@ void Registry::removeComponent(Entity entity) {
     const int componentId = Component<TComponent>::getId();
     const int entityId = entity.getId();
 
+    // Check if component exists
+    if (static_cast<size_t>(componentId) >= componentPools.size() || !componentPools[componentId]) {
+        return;
+    }
+
+    // Clear the data in the pool
+    auto componentPool = std::static_pointer_cast<Pool<TComponent>>(componentPools[componentId]);
+    componentPool->set(entityId, TComponent{}); // reset to default
+
+    // Clear signature
     entityComponentSignatures[entityId].set(componentId, false);
 }
 

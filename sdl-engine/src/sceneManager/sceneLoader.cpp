@@ -66,7 +66,7 @@ void SceneLoader::loadScene(const std::string& scene_path, \
     loadEntities(lua, entities, registry);
 
     sol::table maps = scene["maps"];
-    loadMap(renderer, maps, registry, asset_manager);
+    loadMap(renderer, maps, registry, asset_manager, lua);
 }
 
 void SceneLoader::loadSprites(SDL_Renderer* renderer, \
@@ -252,7 +252,8 @@ void SceneLoader::loadSprite(Entity& entity, const sol::table& components) {
             pivot,
             components["sprite"]["flip"],
             components["sprite"]["is_ui"].get_or(false), // false defualt
-            components["sprite"]["is_unlit"].get_or(false) // false defualt
+            components["sprite"]["is_unlit"].get_or(false), // false default
+            components["sprite"]["is_lit_only"].get_or(false) // false default
         );
     }
 }
@@ -397,6 +398,7 @@ void SceneLoader::loadFlashlight(Entity& entity, const sol::table& components) {
     entity.addComponent<FlashlightComponent>(flashlight);
 }
 
+//* TILED LOADING
 void SceneLoader::loadColliders(std::unique_ptr<Registry>& registry, tinyxml2::XMLElement* object_group) {
     // Load first collider
     tinyxml2::XMLElement* object = object_group->FirstChildElement("object");
@@ -435,6 +437,57 @@ void SceneLoader::loadColliders(std::unique_ptr<Registry>& registry, tinyxml2::X
     }
 }
 
+void SceneLoader::loadEnemies(std::unique_ptr<Registry>& registry, sol::state& lua, tinyxml2::XMLElement* object_group) {
+    tinyxml2::XMLElement* object = object_group->FirstChildElement("object");
+
+    while (object != nullptr) {
+        float x, y;
+        const char* entity_script;
+
+        object->QueryFloatAttribute("x", &x);
+        object->QueryFloatAttribute("y", &y);
+        object->QueryStringAttribute("name", &entity_script);
+
+        sol::protected_function_result result = lua.safe_script_file(entity_script);
+        if (!result.valid()) {
+            sol::error err = result;
+            std::cerr << "[ENEMY] Failed to load: " << entity_script << " - " << err.what() << std::endl;
+            object = object->NextSiblingElement("object");
+            continue;
+        }
+
+        sol::table def        = result;
+        sol::table components = def["components"];
+
+        Entity enemy = registry->createEntity();
+
+        // Register name
+        sol::optional<std::string> has_name = def["name"];
+        if (has_name != sol::nullopt) {
+            registry->registerEntityName(has_name.value(), enemy);
+        }
+
+        // Use existing load methods
+        loadTag(enemy, components);
+        loadAnimation(enemy, components);
+        loadBoxCollider(enemy, components);
+        loadCircleCollider(enemy, components);
+        loadRigidbody(enemy, components);
+        loadSprite(enemy, components);
+        loadCameraFollow(enemy, components);
+        loadMouseFollow(enemy, components);
+        loadFlashlight(enemy, components);
+        loadScript(lua, enemy, components);
+
+        // Transform: override position from map, keep scale/rotation from lua
+        loadTransform(enemy, components);
+        auto& transform = enemy.getComponent<TransformComponent>();
+        transform.position = glm::vec2(x, y);
+
+        object = object->NextSiblingElement("object");
+    }
+}
+
 void SceneLoader::loadChildOf(Entity& entity, const sol::table& components,
     const std::unordered_map<std::string, Entity>& named_entities) {
 
@@ -462,7 +515,7 @@ void SceneLoader::loadChildOf(Entity& entity, const sol::table& components,
 
 //* ----------TILES----------
 void SceneLoader::loadMap(SDL_Renderer* renderer, const sol::table map, std::unique_ptr<Registry>& registry, \
-    std::unique_ptr<AssetManager>& asset_manager) {
+    std::unique_ptr<AssetManager>& asset_manager, sol::state& lua) {
     sol::optional<int> has_width = map["width"];
 
     if (has_width != sol::nullopt) {
@@ -531,14 +584,18 @@ void SceneLoader::loadMap(SDL_Renderer* renderer, const sol::table map, std::uni
    
         tinyxml2::XMLElement* xml_object_group = xml_root->FirstChildElement("objectgroup");
 
-        while (xml_object_group != nullptr) { // TODO: CONSIDER LOADING OTHER OBJECTS IN THE FUTURE
+        while (xml_object_group != nullptr) {
             const char* object_group_name;
             std::string name;
             xml_object_group->QueryStringAttribute("name", &object_group_name);
             name = object_group_name;
             
-            if (name.compare("Colliders") == 0) { // Theyre the same
+            if (name.compare("Colliders") == 0) { // Load colliders
                 loadColliders(registry, xml_object_group);
+            }
+
+            if (name.compare("Enemies") == 0) { // Load enemies
+                loadEnemies(registry, lua, xml_object_group);
             }
 
             // TODO: I could load more object types later on
