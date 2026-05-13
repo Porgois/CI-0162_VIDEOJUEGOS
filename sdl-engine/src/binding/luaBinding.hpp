@@ -2,6 +2,7 @@
 #define LUA_BINDING_HPP
 
 #include <string>
+#include <iostream>
 #include <sol/sol.hpp>
 
 #include "../systems/cameraMovementSystem.hpp"
@@ -200,6 +201,16 @@ void removeBoxCollider(Entity entity) {
 void shakeCamera(float duration, float intensity, float frequency) {
     Game::getInstance().registry->getSystem<CameraMovementSystem>()
         .shake(duration, intensity, frequency);
+}
+
+//* Text
+void setTextText(Entity entity, std::string new_text = "") {
+    if (entity.hasComponent<TextComponent>()) {
+        entity.getComponent<TextComponent>().text = new_text;
+    } else {
+        std::cerr << "[LUA BINDING] Error: Entity has no text component!\n" << std::endl;
+    }
+    
 }
     
 #endif // LUA_BINDING_HPP

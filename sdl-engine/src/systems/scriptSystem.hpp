@@ -44,6 +44,7 @@ public:
         lua.set_function("set_velocity", setVelocity);
         lua.set_function("set_position", setPosition);
         lua.set_function("set_rotation", setRotation);
+        lua.set_function("set_text", setTextText);
         lua.set_function("set_flip", [&registry](Entity entity, bool flipped) {
             auto& sprite = entity.getComponent<SpriteComponent>();
             sprite.flip_to_mouse = false; // disable mouse control
@@ -66,12 +67,32 @@ public:
         // Generic function-calling
         lua.set_function("call_function", [this](Entity entity, const std::string& func_name, sol::variadic_args args) {
             auto it = entity_environments.find(entity.getId());
-            if (it == entity_environments.end()) {
+            sol::environment env;
+
+            if (it != entity_environments.end()) {
+                env = it->second;
+            } else if (entity.hasComponent<ScriptComponent>()) {
+                const auto& script = entity.getComponent<ScriptComponent>();
+                if (script.update.valid()) {
+                    env = sol::get_environment(script.update);
+                } else if (script.start.valid()) {
+                    env = sol::get_environment(script.start);
+                } else if (script.onCollision.valid()) {
+                    env = sol::get_environment(script.onCollision);
+                } else if (script.onClick.valid()) {
+                    env = sol::get_environment(script.onClick);
+                }
+                if (env.valid()) {
+                    env["this"] = entity;
+                    entity_environments[entity.getId()] = env;
+                }
+            }
+
+            if (!env.valid()) {
                 std::cout << "[SCRIPT] call_function: no environment found for entity" << std::endl;
                 return;
             }
 
-            sol::environment& env = it->second;
             sol::protected_function func = env[func_name];
 
             if (!func.valid()) {

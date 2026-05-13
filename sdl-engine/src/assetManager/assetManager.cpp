@@ -24,14 +24,24 @@ void AssetManager::addTexture(SDL_Renderer* renderer, const std::string& texture
     const std::string& file_path
 ) {
     SDL_Surface* surface = IMG_Load(file_path.c_str());
+    if (!surface) {
+        std::cerr << "[ASSET MANAGER] texture load failed: " << IMG_GetError() << " - " << file_path << std::endl;
+        return;
+    }
+
     SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
+    if (!texture) {
+        std::cerr << "[ASSET MANAGER] texture creation failed: " << SDL_GetError() << " - " << file_path << std::endl;
+        return;
+    }
 
     textures.emplace(textureId, texture);
 }
 
 SDL_Texture* AssetManager::getTexture(const std::string& textureId) {
-    return textures[textureId];
+    auto it = textures.find(textureId);
+    return it != textures.end() ? it->second : nullptr;
 }
 
 void AssetManager::addFont(const std::string& font_id, const std::string& file_path, int font_size) {
@@ -47,5 +57,6 @@ void AssetManager::addFont(const std::string& font_id, const std::string& file_p
 }
 
 TTF_Font* AssetManager::getFont(const std::string& font_id) {
-    return fonts[font_id];
+    auto it = fonts.find(font_id);
+    return it != fonts.end() ? it->second : nullptr;
 }

@@ -1,7 +1,6 @@
 return {
     name = "enemy_duck",
     components = {
-        
         animation = {
             clips = {
                 idle = {row = 0, num_frames = 4, animation_speed = 9, loop = true},

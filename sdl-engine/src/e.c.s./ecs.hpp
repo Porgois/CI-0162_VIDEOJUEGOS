@@ -200,6 +200,10 @@ void Registry::removeComponent(Entity entity) {
 
     // Clear signature
     entityComponentSignatures[entityId].set(componentId, false);
+
+    // Force immediate system re-evaluation
+    removeSystemsEntity(entity);
+    addSystemsEntity(entity); 
 }
 
 template <typename TComponent>

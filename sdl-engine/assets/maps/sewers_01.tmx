@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="70" height="40" tilewidth="16" tileheight="16" infinite="0" nextlayerid="27" nextobjectid="45">
+<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="70" height="40" tilewidth="16" tileheight="16" infinite="0" nextlayerid="30" nextobjectid="48">
  <tileset firstgid="1" source="sewers.tsx"/>
  <layer id="5" name="Base Color" width="70" height="40">
   <data encoding="csv">
@@ -397,7 +397,7 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 </data>
  </layer>
- <imagelayer id="20" name="Player" offsetx="431.644" offsety="211.667">
+ <imagelayer id="20" name="Player Layer Placeholder" offsetx="396.977" offsety="153">
   <image source="../../sprites/aseprite files/characters/duck_sprite.png" width="30" height="30"/>
  </imagelayer>
  <layer id="26" name="Filler Layer" width="70" height="40">
@@ -641,9 +641,18 @@
   <object id="39" name="collider_2" x="481.374" y="147.914" width="18.6258" height="36.1769"/>
   <object id="40" name="collider_1" x="353" y="247.25" width="78" height="11.5"/>
  </objectgroup>
+ <objectgroup id="29" name="Objects">
+  <object id="46" name="e_revolver.lua" x="433.333" y="173.333"/>
+  <object id="47" name="e_destructable_barrel_01.lua" x="319.75" y="165.5"/>
+ </objectgroup>
  <objectgroup id="25" name="Enemies">
-  <object id="44" name="./assets/scripts/entities/e_enemy_duck.lua" x="664.341" y="229.841">
+  <object id="44" name="e_enemy_duck.lua" x="664.341" y="229.841">
    <capsule/>
+  </object>
+ </objectgroup>
+ <objectgroup id="28" name="Player">
+  <object id="45" name="e_player.lua" x="392.5" y="215.083">
+   <ellipse/>
   </object>
  </objectgroup>
 </map>

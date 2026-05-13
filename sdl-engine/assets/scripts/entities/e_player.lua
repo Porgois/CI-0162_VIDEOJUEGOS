@@ -1,12 +1,11 @@
 return {
     name = "player",
     components = {
-        
         animation = {
             clips = {
                 idle = {row = 0, num_frames = 4, animation_speed = 9, loop = true},
                 walk = {row = 1, num_frames = 6, animation_speed = 12, loop = true},
-                damage = {row = 2, num_frames = 2, animation_speed = 12, loop = true},
+                damage = {row = 2, num_frames = 2, animation_speed = 12, loop = false},
                 death  = {row = 3, num_frames = 3, animation_speed = 12, loop = false}
             }
         },

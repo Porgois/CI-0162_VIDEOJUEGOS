@@ -1,5 +1,6 @@
 local player_velocity = 60
-local player_health = 3
+local max_health = 3
+local current_health = 3
 local follow = true
 local fixed_player_velocity = math.sqrt((player_velocity * player_velocity) / 2)
 local revolver
@@ -55,7 +56,7 @@ states["damage"] = {
     update = function()
         damage_timer = damage_timer - get_delta_time()
         if damage_timer <= 0 then
-            if player_health <= 0 then
+            if current_health <= 0 then
                 transition_to("dead")
             else
                 transition_to("idle")
@@ -105,17 +106,33 @@ end
 
 function take_damage(damage_amount)
     if state == "dead" then return end
-    player_health = player_health - damage_amount
+    current_health = current_health - damage_amount
     transition_to("damage")
 end
 
 function on_collision(other)
-    if get_tag(other) == "t_ammo_pickup" then
+  
+    if get_tag(other) == "t_ammo_pickup" then -- AMMO
+        call_function(other, "spawn_text", "+3 ammo!")
+
         if GameState and GameState.add_ammo then
             GameState.add_ammo(3)
         end
+
         delete_entity(other)
     end
+
+    if get_tag(other) == "t_health_pickup" then -- HEALTH
+       
+        if current_health < max_health then
+            current_health = current_health + 1
+            call_function(other, "spawn_text", "+1 health!")
+        else
+            call_function(other, "spawn_text", "health full!")
+        end
+        delete_entity(other)
+    end
+
 end
 
 function update()

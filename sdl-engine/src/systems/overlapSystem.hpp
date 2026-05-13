@@ -111,8 +111,11 @@ class OverlapSystem : public System {
         void onCollisionEvent(CollisionEvent& e) {
             auto& a_rigidbody = e.collider.getComponent<RigidBodyComponent>();
             auto& b_rigidbody = e.collidee.getComponent<RigidBodyComponent>();
+            auto& a_collider = e.collider.getComponent<BoxColliderComponent>();
+            auto& b_collider = e.collidee.getComponent<BoxColliderComponent>();
 
-            if (a_rigidbody.is_solid && b_rigidbody.is_solid) {
+            // Only apply overlap avoidance if both colliders are not triggers
+            if (a_rigidbody.is_solid && b_rigidbody.is_solid && !a_collider.is_trigger && !b_collider.is_trigger) {
                 if (a_rigidbody.mass >= b_rigidbody.mass) {
                     avoidOverlap(e.collider, e.collidee);
                 } else {

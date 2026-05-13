@@ -270,7 +270,7 @@ void Game::render() {
     registry->getSystem<RenderSystem>().update(renderer, asset_manager, camera, zoom_level, \
         tile_entities, true);
 
-    registry->getSystem<TextRenderSystem>().update(renderer, asset_manager);
+    registry->getSystem<TextRenderSystem>().update(renderer, asset_manager, camera, zoom_level);
     registry->getSystem<CursorSystem>().update(renderer, asset_manager);
 
     if (is_debug_mode) {

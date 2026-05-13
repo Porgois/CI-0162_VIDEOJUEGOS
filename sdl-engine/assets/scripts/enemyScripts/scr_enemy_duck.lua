@@ -1,5 +1,6 @@
 -- Possible entity spawns
 local ammo_pickup_entity = dofile("./assets/scripts/entities/e_ammo_pickup.lua")
+local health_pickup_entity = dofile("./assets/scripts/entities/e_health_pickup.lua")
 
 -- General values
 local speed = 35
@@ -26,8 +27,9 @@ local patrol_target_x, patrol_target_y = 0, 0
 local patrol_wait = 0
 local patrol_wait_duration = 2.0
 
--- Death chance
-local on_death_chance = 1.0 -- 100% chance
+-- Drop chance
+local drop_chance = 1.0         -- 75% chance to drop anything
+local ammo_chance = 0.2        -- 20% chance for ammo, 80% for health
 local on_death_triggered = false
 
 local function flip_towards(dx)
@@ -148,8 +150,10 @@ states["dead"] = {
         play_animation(this, "death")
         if not on_death_triggered then
             on_death_triggered = true
-            if math.random() <= on_death_chance then
-                on_death()
+            remove_box_collider(this)
+            
+            if math.random() <= drop_chance then
+                random_drop()
             end
         end
     end,
@@ -157,11 +161,6 @@ states["dead"] = {
         -- do nothing
     end
 }
-
-function on_death()
-    random_drop()
-    remove_box_collider(this)
-end
 
 function transition_to(new_state)
     if states[new_state] then
@@ -189,12 +188,26 @@ function attack()
 end
 
 function random_drop()
-    print("[ENEMY SCRIPT] DROPPED RANDOM ITEM!")
-    local ammo_drop = spawn_entity(ammo_pickup_entity)
+    print("[DESTRUCTABLE SCRIPT] ROLLED FOR DROP!")
+
+    if math.random() > drop_chance then
+        print("[DESTRUCTABLE SCRIPT] NO DROP!")
+        return
+    end
+
+    local picked_entity
+    if math.random() <= ammo_chance then
+        print("[DESTRUCTABLE SCRIPT] DROPPED AMMO!")
+        picked_entity = spawn_entity(ammo_pickup_entity)
+    else
+        print("[DESTRUCTABLE SCRIPT] DROPPED HEALTH!")
+        picked_entity = spawn_entity(health_pickup_entity)
+    end
+
     local x_pos, y_pos = get_position(this)
-    x_pos = x_pos + 10 -- spawn offset
-    y_pos = y_pos + 25 -- spawn offset
-    set_position(ammo_drop, x_pos, y_pos) -- spawn position
+    x_pos = x_pos + 10
+    y_pos = y_pos + 25
+    set_position(picked_entity, x_pos, y_pos)
 end
 
 function distance_to_player()

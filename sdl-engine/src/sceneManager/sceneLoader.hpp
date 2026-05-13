@@ -47,6 +47,8 @@ class SceneLoader {
 
         static void loadTransform(Entity& entity, const sol::table& components);
 
+        static void setEntityPositionFromMapObject(Entity& entity, float x, float y, float width, float height);
+
         static void loadText(Entity& entity, const sol::table& components);
 
         static void loadClickable(Entity& entity, const sol::table& components);
@@ -55,9 +57,15 @@ class SceneLoader {
 
         static void loadMouseFollow(Entity& entity, const sol::table& components);
 
+        //* LOAD FROM TILED
         static void loadColliders(std::unique_ptr<Registry>& registry, tinyxml2::XMLElement* object_group);
 
-        static void loadEnemies(std::unique_ptr<Registry>& registry, sol::state& lua, tinyxml2::XMLElement* object_group);
+        static void loadEnemies(std::unique_ptr<Registry>& registry, sol::state& lua, tinyxml2::XMLElement* object_group, std::unordered_map<std::string, Entity>& named_entities);
+
+        static void loadPlayer(std::unique_ptr<Registry>& registry, sol::state& lua, tinyxml2::XMLElement* object_group, std::unordered_map<std::string, Entity>& named_entities);
+
+        static void loadObjects(std::unique_ptr<Registry>& registry, sol::state& lua, tinyxml2::XMLElement* object_group, std::unordered_map<std::string, Entity>& named_entities);
+        //* LOAD FROM TILED
 
         static void loadFlashlight(Entity& entity, const sol::table& components);
 
