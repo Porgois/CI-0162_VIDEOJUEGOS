@@ -164,6 +164,25 @@ void Game::setup() {
     lua["GameState"]["zone_config_queue"] = lua.create_table();
     lua["GameState"]["slotted_bullets"] = lua.create_table();
 
+    // Load starting values from Lua config so they can be changed without recompiling.
+    sol::load_result config_result = lua.load_file("./assets/scripts/game_state_config.lua");
+    if (config_result.valid()) {
+        lua.script_file("./assets/scripts/game_state_config.lua");
+        sol::optional<sol::table> config = lua["GameConfig"];
+        if (config) {
+            lua["GameState"]["player_health"] = config->get_or("player_health", 3);
+            lua["GameState"]["player_max_health"] = config->get_or("player_max_health", 3);
+            lua["GameState"]["player_ammo"] = config->get_or("player_ammo", 6);
+            lua["GameState"]["player_max_ammo"] = config->get_or("player_max_ammo", 6);
+        }
+    } else {
+        std::cout << "[GAME] Failed to load game_state_config.lua, using defaults." << std::endl;
+        lua["GameState"]["player_health"] = 3;
+        lua["GameState"]["player_max_health"] = 3;
+        lua["GameState"]["player_ammo"] = 6;
+        lua["GameState"]["player_max_ammo"] = 6;
+    }
+
     registry->getSystem<ScriptSystem>().createLuaBindings(lua, registry, named_entities); // bindings
     scene_manager->loadScriptScenes("./assets/scripts/scenes/scenes.lua", lua); // scenes
 }

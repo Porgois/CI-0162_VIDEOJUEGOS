@@ -36,6 +36,15 @@ function start()
     GameState.spend_casing = spend_casing
     GameState.set_reload_menu = set_reload_menu
     GameState.add_ammo = add_ammo
+
+    if GameState and GameState.player_ammo ~= nil then
+        starting_ammo = GameState.player_ammo
+    else
+        if GameState then
+            GameState.player_ammo = starting_ammo
+        end
+    end
+
     set_position(this, -1000, -1000)
 end
 
@@ -376,6 +385,9 @@ function add_ammo(n)
     if to_spawn > 0 then
         append_bullets(to_spawn)
         reorder_grid()
+        if GameState then
+            GameState.player_ammo = (GameState.player_ammo or starting_ammo) + to_spawn
+        end
     end
 end
 

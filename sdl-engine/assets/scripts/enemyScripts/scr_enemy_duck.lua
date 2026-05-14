@@ -14,6 +14,7 @@ local patrol_range = 30
 local attack_delay = 0.5
 local attack_delay_timer = 0
 local attack_hit = false
+local has_been_hit = false
 
 -- Animation
 local animation_timer = 0
@@ -68,6 +69,7 @@ states["idle"] = {
 
 states["patrol"] = {
     enter = function()
+        set_velocity(this, 0, 0)
         patrol_wait = patrol_wait_duration
         pick_patrol_target()
     end,
@@ -110,7 +112,7 @@ states["pursue"] = {
             return
         end
         local dist = distance_to_player()
-        if dist > detection_range then
+        if dist > detection_range and not has_been_hit then
             transition_to("patrol")
             return
         end
@@ -194,7 +196,7 @@ end
 
 function can_detect_player()
     if not has_entity("player") then return false end
-    return distance_to_player() <= detection_range
+    return has_been_hit or distance_to_player() <= detection_range
 end
 
 function pick_patrol_target()
@@ -211,19 +213,19 @@ function attack()
 end
 
 function random_drop()
-    print("[DESTRUCTABLE SCRIPT] ROLLED FOR DROP!")
+    print("[ENEMY SCRIPT] ROLLED FOR DROP!")
 
     if math.random() > drop_chance then
-        print("[DESTRUCTABLE SCRIPT] NO DROP!")
+        print("[ENEMY SCRIPT] NO DROP!")
         return
     end
 
     local picked_entity
     if math.random() <= ammo_chance then
-        print("[DESTRUCTABLE SCRIPT] DROPPED AMMO!")
+        print("[ENEMY SCRIPT] DROPPED AMMO!")
         picked_entity = spawn_entity(ammo_pickup_entity)
     else
-        print("[DESTRUCTABLE SCRIPT] DROPPED HEALTH!")
+        print("[ENEMY SCRIPT] DROPPED HEALTH!")
         picked_entity = spawn_entity(health_pickup_entity)
     end
 
@@ -266,6 +268,8 @@ function take_damage(amount)
     
     current_health = current_health - amount
     play_audio("assets/soundEffects/misc/hits/hit_flesh.wav", 0, 30)
+
+    has_been_hit = true
 
     if current_health <= 0 then
         transition_to("dead")

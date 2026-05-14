@@ -50,10 +50,11 @@ end
 function take_damage(amount)
     if state == "destroyed" then return end
     current_health = current_health - amount
-    play_audio("assets/soundEffects/misc/hits/hit_metal.wav", 0, 20)
+    
     if current_health <= 0 then
         transition_to("destroyed")
     else
+        play_audio("assets/soundEffects/misc/hits/hit_metal.wav", 0, 15)
         animation_timer = damage_anim_duration
     end
 end
@@ -68,6 +69,7 @@ states["idle"] = {
 states["destroyed"] = {
     enter = function()
         set_velocity(this, 0, 0)
+        play_audio("assets/soundEffects/misc/breaks/metal_break.wav", 0, 25)
         play_animation(this, "destroy")
         if not on_destroyed_triggered then
             on_destroyed_triggered = true

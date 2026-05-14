@@ -369,7 +369,8 @@ void SceneLoader::loadText(Entity &entity, const sol::table &components)
             components["text"]["out_r"].get_or(0),
             components["text"]["out_g"].get_or(0),
             components["text"]["out_b"].get_or(0),
-            components["text"]["out_a"].get_or(255)
+            components["text"]["out_a"].get_or(255),
+            components["text"]["is_ui"].get_or(false)
         );
     }
 }

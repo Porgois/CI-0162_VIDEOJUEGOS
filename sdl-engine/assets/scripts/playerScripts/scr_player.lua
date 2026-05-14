@@ -126,6 +126,7 @@ function take_damage(damage_amount)
     if state == "dead" then return end
     play_audio("assets/soundEffects/misc/hits/hit_flesh.wav", 0, 30)
     current_health = current_health - damage_amount
+    if GameState then GameState.player_health = current_health end
     transition_to("damage")
 end
 
@@ -135,6 +136,7 @@ function on_collision(other)
         call_function(other, "spawn_text", "+3 ammo!")
 
         if GameState and GameState.add_ammo then
+            play_audio("assets/soundEffects/misc/pickups/ammo_pickup.wav", 0, 30)
             GameState.add_ammo(3)
         end
 
@@ -145,8 +147,11 @@ function on_collision(other)
        
         if current_health < max_health then
             current_health = current_health + 1
+            if GameState then GameState.player_health = current_health end
+            play_audio("assets/soundEffects/misc/pickups/health_pickup.wav", 0, 20)
             call_function(other, "spawn_text", "+1 health!")
         else
+            play_audio("assets/soundEffects/misc/pickups/health_pickup.wav", 0, 15)
             call_function(other, "spawn_text", "health full!")
         end
         delete_entity(other)
@@ -169,9 +174,11 @@ function update()
 
         -- Play revolver open/close audio
         if not GameState.reload_menu_open then
-            play_audio("assets/soundEffects/weapons/reload/cyllinder_close.wav")
+            play_audio("assets/soundEffects/misc/flashlight/flashlight_off.wav")
+            play_audio("assets/soundEffects/weapons/reload/cyllinder_close.wav", 0, 10)
         else
-            play_audio("assets/soundEffects/weapons/reload/cyllinder_open.wav")
+            play_audio("assets/soundEffects/misc/flashlight/flashlight_on.wav")
+            play_audio("assets/soundEffects/weapons/reload/cyllinder_open.wav", 0, 10)
         end
 
         return
@@ -188,7 +195,19 @@ function update()
 end
 
 function start()
-    play_music("assets/soundEffects/environment/sewer_soundscape.wav", -1, 32)
+    if GameState and GameState.player_health ~= nil then
+        current_health = GameState.player_health
+    else
+        if GameState then GameState.player_health = current_health end
+    end
+
+    if GameState and GameState.player_max_health ~= nil then
+        max_health = GameState.player_max_health
+    else
+        if GameState then GameState.player_max_health = max_health end
+    end
+
+    play_music("assets/soundEffects/environment/2.wav", -1, 4)
 
     if has_entity("revolver") then
         print("has revolver!")

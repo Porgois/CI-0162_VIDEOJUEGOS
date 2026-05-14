@@ -79,12 +79,25 @@ class TextRenderSystem : public System {
                     }
                 }
 
-                SDL_Rect dstRect = {
-                    static_cast<int>((transform.position.x * zoom_level) - camera.x),
-                    static_cast<int>((transform.position.y * zoom_level) - camera.y),
-                    text.width  * static_cast<int>(transform.scale.x),
-                    text.height * static_cast<int>(transform.scale.y)
-                };
+                SDL_Rect dstRect;
+                
+                if (text.is_ui) {
+                    // UI text: fixed screen position, no camera or zoom
+                    dstRect = {
+                        static_cast<int>(transform.position.x),
+                        static_cast<int>(transform.position.y),
+                        text.width  * static_cast<int>(transform.scale.x),
+                        text.height * static_cast<int>(transform.scale.y)
+                    };
+                } else {
+                    // World text: affected by camera and zoom
+                    dstRect = {
+                        static_cast<int>((transform.position.x * zoom_level) - camera.x),
+                        static_cast<int>((transform.position.y * zoom_level) - camera.y),
+                        text.width  * static_cast<int>(transform.scale.x),
+                        text.height * static_cast<int>(transform.scale.y)
+                    };
+                }
 
                 SDL_RenderCopy(renderer, texture, NULL, &dstRect);
                 SDL_DestroyTexture(texture);

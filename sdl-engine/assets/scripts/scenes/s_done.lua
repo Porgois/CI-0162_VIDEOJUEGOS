@@ -38,17 +38,8 @@ scene = {
         },
         { -- Game title
             components = {
-                clickable = {},
-                text = {text = "Untitled Duck Game", font_id = "pixel_sleigh_32", r = 255, g = 255, b = 255, a = 255, outline_thickness = 3},
+                text = {text = "Thanks for playing!", font_id = "pixel_sleigh_32", r = 255, g = 255, b = 255, a = 255, outline_thickness = 3},
                 transform = {position = {x = 20.0, y = 50.0}, scale = {x = 1.0, y = 1.0}, rotation = 0.0}
-            }
-        },
-        { -- Start 
-            components = {
-                clickable = {width = 210, height = 55, offset_x = 30, offset_y = 160},
-                script = {path = "./assets/scripts/menuScripts/menu_button_01.lua"},
-                text = {text = "Start game", font_id = "pixel_sleigh_24", r = 255, g = 255, b = 255, a = 255, outline_thickness = 3},
-                transform = {position = {x = 20.0, y = 110.0}, scale = {x = 1.0, y = 1.0}, rotation = 0.0}
             }
         }
     }

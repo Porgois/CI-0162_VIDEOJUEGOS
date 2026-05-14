@@ -7,6 +7,20 @@ local can_shoot = true
 local max_ammo = 6
 local current_ammo = 6
 
+function start()
+    if GameState and GameState.player_ammo ~= nil then
+        current_ammo = GameState.player_ammo
+    else
+        if GameState then GameState.player_ammo = current_ammo end
+    end
+
+    if GameState and GameState.player_max_ammo ~= nil then
+        max_ammo = GameState.player_max_ammo
+    else
+        if GameState then GameState.player_max_ammo = max_ammo end
+    end
+end
+
 -- Cooldown
 local shoot_cooldown = 0.3
 local cooldown_timer = 0.0
@@ -51,6 +65,7 @@ function shoot_projectile()
     can_shoot = false
     cooldown_timer = shoot_cooldown
     current_ammo = current_ammo - 1
+    if GameState then GameState.player_ammo = current_ammo end
 end
 
 function update()

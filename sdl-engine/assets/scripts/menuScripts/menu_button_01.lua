@@ -1,3 +1,3 @@
 function on_click()
-    go_to_scene("test_scene")
+    go_to_scene("sewers_01")
 end
