@@ -1,0 +1,10 @@
+#ifndef AUDIO_PLAYER_COMPONENT_HPP
+#define AUDIO_PLAYER_COMPONENT_HPP
+
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_mixer.h>
+
+
+
+
+#endif // AUDIO_PLAYER_COMPONENT_HPP

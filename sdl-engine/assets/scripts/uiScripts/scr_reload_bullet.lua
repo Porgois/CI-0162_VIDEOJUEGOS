@@ -14,6 +14,7 @@ function eject_bullet(slot)
     end
     is_ejecting = true
     play_animation(this, "eject")
+    play_audio("assets/soundEffects/weapons/reload/bullet_01.wav")
     print("[RELOAD BULLET] Ejecting spent bullet")
 end
 
@@ -52,6 +53,7 @@ function on_click()
 
     is_held = true
     GameState.drop_state = "idle"
+    play_audio("assets/soundEffects/weapons/reload/bullet_02.wav")
 end
 
 function update()

@@ -4,6 +4,7 @@
 #include <string>
 #include <iostream>
 #include <sol/sol.hpp>
+#include <vector>
 
 #include "../systems/cameraMovementSystem.hpp"
 
@@ -139,6 +140,23 @@ std::tuple<int, int> getColliderOffset(Entity entity) {
 bool getFlip(Entity entity) {
     auto& sprite = entity.getComponent<SpriteComponent>();
     return sprite.flip == SDL_FLIP_HORIZONTAL;
+}
+
+//* Audio
+void playAudio(const std::string& audio_path, int loops, int volume) {
+    Game::getInstance().audio_manager->playSound(audio_path, loops, volume);
+}
+
+void playMusic(const std::string& music_path, int loops, int volume) {
+    Game::getInstance().audio_manager->playMusic(music_path, loops, volume);
+}
+
+void playRandomAudio(const std::vector<std::string>& audio_paths, int loops, int volume) {
+    Game::getInstance().audio_manager->playRandomSound(audio_paths, loops, volume);
+}
+
+void stopMusic() {
+    Game::getInstance().audio_manager->stopMusic();
 }
 
 //* Scene switching

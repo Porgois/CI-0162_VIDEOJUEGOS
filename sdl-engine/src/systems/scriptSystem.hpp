@@ -2,6 +2,7 @@
 #define SCRIPT_SYSTEM_HPP
 #include <memory>
 #include <sol/sol.hpp>
+#include <vector>
 
 #include "../components/scriptComponent.hpp"
 #include "../binding/luaBinding.hpp"
@@ -39,6 +40,51 @@ public:
         lua.set_function("has_entity", hasEntity);
         lua.set_function("remove_box_collider", removeBoxCollider);
         lua.set_function("shake_camera", shakeCamera);
+        
+        // Audio with overloads for convenience
+        lua.set_function("play_audio", sol::overload(
+            [](const std::string& path) { playAudio(path, 0, 128); },
+            [](const std::string& path, int loops) { playAudio(path, loops, 128); },
+            [](const std::string& path, int loops, int volume) { playAudio(path, loops, volume); }
+        ));
+        
+        lua.set_function("play_music", sol::overload(
+            [](const std::string& path) { playMusic(path, -1, 128); },
+            [](const std::string& path, int loops) { playMusic(path, loops, 128); },
+            [](const std::string& path, int loops, int volume) { playMusic(path, loops, volume); }
+        ));
+        
+        lua.set_function("music", sol::overload(
+            [](const std::string& path) { playMusic(path, -1, 128); },
+            [](const std::string& path, int loops) { playMusic(path, loops, 128); },
+            [](const std::string& path, int loops, int volume) { playMusic(path, loops, volume); }
+        ));
+        
+        lua.set_function("play_random_audio", sol::overload(
+            [](const sol::table& paths) { 
+                std::vector<std::string> vec;
+                for (auto& p : paths) {
+                    vec.push_back(p.second.as<std::string>());
+                }
+                playRandomAudio(vec, 0, 128); 
+            },
+            [](const sol::table& paths, int loops) { 
+                std::vector<std::string> vec;
+                for (auto& p : paths) {
+                    vec.push_back(p.second.as<std::string>());
+                }
+                playRandomAudio(vec, loops, 128); 
+            },
+            [](const sol::table& paths, int loops, int volume) { 
+                std::vector<std::string> vec;
+                for (auto& p : paths) {
+                    vec.push_back(p.second.as<std::string>());
+                }
+                playRandomAudio(vec, loops, volume); 
+            }
+        ));
+        
+        lua.set_function("stop_music", stopMusic);
 
         // Setters
         lua.set_function("set_velocity", setVelocity);

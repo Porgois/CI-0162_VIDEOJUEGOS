@@ -312,6 +312,7 @@ function update()
                 best_slot.bullet = dropped
                 accepted = true
                 play_animation(best_slot.bullet, "full")
+                play_audio("assets/soundEffects/weapons/reload/load_bullet.wav")
 
                 if GameState.slotted_bullets == nil then
                     GameState.slotted_bullets = {}

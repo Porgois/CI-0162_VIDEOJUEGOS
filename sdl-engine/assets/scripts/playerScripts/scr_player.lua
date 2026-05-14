@@ -9,6 +9,20 @@ local revolver
 local damage_timer = 0
 local damage_duration = 0.25
 
+local not_dead = true
+
+-- Footsteps
+local footstep_timer = 0
+local footstep_interval = 0.27
+local footstep_sounds = {
+    "assets/soundEffects/footsteps/stone/sndFootShoRock1.wav",
+    "assets/soundEffects/footsteps/stone/sndFootShoRock2.wav",
+    "assets/soundEffects/footsteps/stone/sndFootShoRock3.wav",
+    "assets/soundEffects/footsteps/stone/sndFootShoRock4.wav",
+    "assets/soundEffects/footsteps/stone/sndFootShoRock5.wav",
+    "assets/soundEffects/footsteps/stone/sndFootShoRock6.wav"
+}
+
 -- State machine
 local state = "idle"
 local states = {}
@@ -27,7 +41,9 @@ states["idle"] = {
 }
 
 states["walk"] = {
-    enter = function() end,
+    enter = function() 
+        footstep_timer = footstep_interval -- reset timer when starting to walk
+    end,
     update = function()
         local vel_x, vel_y = get_movement_input()
         if vel_x == 0 and vel_y == 0 then
@@ -42,6 +58,7 @@ states["walk"] = {
             vel_y = vel_y * player_velocity
         end
         set_velocity(this, vel_x, vel_y)
+        handle_footsteps()
         play_animation(this, "walk")
     end
 }
@@ -76,6 +93,7 @@ states["dead"] = {
 }
 
 function die()
+    not_dead = false
     set_focus(false)
     delete_entity(revolver)
 end
@@ -106,6 +124,7 @@ end
 
 function take_damage(damage_amount)
     if state == "dead" then return end
+    play_audio("assets/soundEffects/misc/hits/hit_flesh.wav", 0, 30)
     current_health = current_health - damage_amount
     transition_to("damage")
 end
@@ -135,9 +154,26 @@ function on_collision(other)
 
 end
 
+function handle_footsteps()
+    footstep_timer = footstep_timer - get_delta_time()
+    if footstep_timer <= 0 then
+        play_random_audio(footstep_sounds, 0, 3)
+        footstep_timer = footstep_interval
+    end
+end
+
+
 function update()
-    if GameState and GameState.set_reload_menu and is_button_just_pressed("rmb") then
+    if GameState and GameState.set_reload_menu and not_dead and is_button_just_pressed("rmb") then
         GameState.set_reload_menu(not GameState.reload_menu_open)
+
+        -- Play revolver open/close audio
+        if not GameState.reload_menu_open then
+            play_audio("assets/soundEffects/weapons/reload/cyllinder_close.wav")
+        else
+            play_audio("assets/soundEffects/weapons/reload/cyllinder_open.wav")
+        end
+
         return
     end
 
@@ -152,6 +188,8 @@ function update()
 end
 
 function start()
+    play_music("assets/soundEffects/environment/sewer_soundscape.wav", -1, 32)
+
     if has_entity("revolver") then
         print("has revolver!")
         revolver = find_entity("revolver")

@@ -5,7 +5,11 @@ function on_collision(other)
     local tag = get_tag(other)
 
     -- Collide with walls
-    if tag == "t_enemy" or "t_destructable" then -- Collide with enemies or destructable objects
+    if tag == "t_enemy" then -- Collide with enemies or destructable objects
+        call_function(other, "take_damage", damage_to_deal)
+    end
+
+    if tag == "t_destructable" then
         call_function(other, "take_damage", damage_to_deal)
     end
 

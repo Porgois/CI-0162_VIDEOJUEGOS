@@ -50,6 +50,7 @@ end
 function take_damage(amount)
     if state == "destroyed" then return end
     current_health = current_health - amount
+    play_audio("assets/soundEffects/misc/hits/hit_metal.wav", 0, 20)
     if current_health <= 0 then
         transition_to("destroyed")
     else

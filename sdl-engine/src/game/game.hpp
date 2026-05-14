@@ -11,6 +11,7 @@
 // Managers
 #include "../e.c.s./ecs.hpp"
 #include "../assetManager/assetManager.hpp"
+#include "../audio/audioManager.hpp"
 #include "../eventManager/eventManager.hpp"
 #include "../controllerManager/controllerManager.hpp"
 #include "../sceneManager/sceneManager.hpp"
@@ -48,6 +49,7 @@ class Game {
         SDL_Renderer* renderer = nullptr;
         SDL_Rect camera = {0, 0, 0, 0};
         std::unique_ptr<AssetManager> asset_manager;
+        std::unique_ptr<AudioManager> audio_manager;
         std::unique_ptr<EventManager> event_manager;
         std::unique_ptr<ControllerManager> controller_manager;
         std::unique_ptr<SceneManager> scene_manager;

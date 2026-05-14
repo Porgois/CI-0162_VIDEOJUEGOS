@@ -30,6 +30,7 @@ Game::Game() {
 
     registry = std::make_unique<Registry>();
     asset_manager = std::make_unique<AssetManager>();
+    audio_manager = std::make_unique<AudioManager>();
     event_manager = std::make_unique<EventManager>();
     controller_manager = std::make_unique<ControllerManager>();
     scene_manager = std::make_unique<SceneManager>();
@@ -38,6 +39,7 @@ Game::Game() {
 // Destructor
 Game::~Game() {
     asset_manager.reset();
+    audio_manager.reset();
     controller_manager.reset();
     event_manager.reset();
     registry.reset();
@@ -64,7 +66,12 @@ void Game::init() {
         std::cerr << "[GAME] Could not initialize SDL_TTF!" << std::endl;
         return;
     }
-    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+        std::cerr << "[GAME] Could not initialize SDL_mixer: " << Mix_GetError() << std::endl;
+        return;
+    }
+    Mix_AllocateChannels(32);
 
     // Texture filtering
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
@@ -90,6 +97,13 @@ void Game::init() {
         -1, // screen driver; [the index of the rendering driver]
         0 // flags (no flags) https://wiki.libsdl.org/SDL2/SDL_RendererFlags
     );
+
+    if (!renderer) {
+        std::cerr << "[GAME] Could not create the game *renderer*!" << std::endl;
+        return;
+    }
+
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
     // Camera setup
     camera.x = 0;
@@ -312,6 +326,12 @@ void Game::run() {
 }
 
 void Game::destroy() {
+    if (audio_manager) {
+        audio_manager->clearAssets();
+    }
+    Mix_CloseAudio();
+    Mix_Quit();
+
     // Destroy Renderer and Window
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);

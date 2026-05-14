@@ -8,7 +8,7 @@ local max_ammo = 6
 local current_ammo = 6
 
 -- Cooldown
-local shoot_cooldown = 0.6
+local shoot_cooldown = 0.3
 local cooldown_timer = 0.0
 
 -- Offset
@@ -31,6 +31,7 @@ function shoot_projectile()
     end
 
     if GameState == nil or GameState.spend_casing == nil or not GameState.spend_casing() then
+        play_audio("assets/soundEffects/weapons/shoot/dry_fire.wav", 0, 64)
         return
     end
 
@@ -44,6 +45,7 @@ function shoot_projectile()
     set_position(projectile, spawn_x, spawn_y)
     set_rotation(projectile, math.deg(angle))
     set_velocity(projectile, math.cos(angle) * projectile_speed, math.sin(angle) * projectile_speed)
+    play_audio("assets/soundEffects/weapons/shoot/shoot.wav", 0, 24)
     shake_camera(0.4, 3.0, 30.0)
 
     can_shoot = false
