@@ -37,12 +37,18 @@ bool isButtonJustPressed(const std::string& name) {
 
 //* Rigidbody
 void setVelocity(Entity entity, float velocity_x, float velocity_y) {
+    if (!entity.hasComponent<RigidBodyComponent>()) {
+        return;
+    }
     auto& rigidbody = entity.getComponent<RigidBodyComponent>();
     rigidbody.velocity.x = velocity_x;
     rigidbody.velocity.y = velocity_y;
 }
 
 std::tuple<int, int> getVelocity(Entity entity) {
+    if (!entity.hasComponent<RigidBodyComponent>()) {
+        return {0, 0};
+    }
     auto& rigidbody = entity.getComponent<RigidBodyComponent>();
     return {
         static_cast<int>(rigidbody.velocity.x),
@@ -52,11 +58,17 @@ std::tuple<int, int> getVelocity(Entity entity) {
 
 //* Setters
 void setAnimation(Entity entity, const std::string animation_name) {
+    if (!entity.hasComponent<AnimationComponent>()) {
+        return;
+    }
     auto& animation = entity.getComponent<AnimationComponent>();
     animation.play(animation_name);
 }
 
 void setPosition(Entity entity, double x, double y) {
+    if (!entity.hasComponent<TransformComponent>()) {
+        return;
+    }
     auto& transform = entity.getComponent<TransformComponent>();
 
     transform.position.x = x;
@@ -64,6 +76,9 @@ void setPosition(Entity entity, double x, double y) {
 }
 
 void setRotation(Entity entity, double rotation) {
+    if (!entity.hasComponent<TransformComponent>()) {
+        return;
+    }
     auto& transform = entity.getComponent<TransformComponent>();
 
     transform.rotation = rotation;
@@ -71,6 +86,9 @@ void setRotation(Entity entity, double rotation) {
 
 //* Getters
 std::tuple<int, int> getPosition(Entity entity) {
+    if (!entity.hasComponent<TransformComponent>()) {
+        return {0, 0};
+    }
     const auto& transform = entity.getComponent<TransformComponent>();
     return {
         static_cast<int>(transform.position.x),
@@ -79,6 +97,9 @@ std::tuple<int, int> getPosition(Entity entity) {
 }
 
 std::tuple<float, float> getPivotedPosition(Entity entity) {
+    if (!entity.hasComponent<TransformComponent>() || !entity.hasComponent<SpriteComponent>()) {
+        return {0.0f, 0.0f};
+    }
     const auto& transform = entity.getComponent<TransformComponent>();
     const auto& sprite = entity.getComponent<SpriteComponent>();
     bool has_pivot = (sprite.pivot.x != 0 || sprite.pivot.y != 0);
@@ -91,6 +112,9 @@ std::tuple<float, float> getPivotedPosition(Entity entity) {
 }
 
 std::tuple<int, int> getPreviousPosition(Entity entity) {
+    if (!entity.hasComponent<TransformComponent>()) {
+        return {0, 0};
+    }
     const auto& transform = entity.getComponent<TransformComponent>();
     return {
         static_cast<int>(transform.previous_position.x),
@@ -119,6 +143,9 @@ std::tuple<int, int> getMousePosition() {
 }
 
 std::tuple<int, int> getColliderSize(Entity entity) { 
+    if (!entity.hasComponent<BoxColliderComponent>() || !entity.hasComponent<TransformComponent>()) {
+        return {0, 0};
+    }
     auto& collider = entity.getComponent<BoxColliderComponent>();
     auto& transform = entity.getComponent<TransformComponent>();
 
@@ -129,6 +156,9 @@ std::tuple<int, int> getColliderSize(Entity entity) {
 }
 
 std::tuple<int, int> getColliderOffset(Entity entity) { 
+    if (!entity.hasComponent<BoxColliderComponent>() || !entity.hasComponent<TransformComponent>()) {
+        return {0, 0};
+    }
     auto& collider = entity.getComponent<BoxColliderComponent>();
     auto& transform = entity.getComponent<TransformComponent>();
     return {
@@ -138,6 +168,9 @@ std::tuple<int, int> getColliderOffset(Entity entity) {
 }
 
 bool getFlip(Entity entity) {
+    if (!entity.hasComponent<SpriteComponent>()) {
+        return false;
+    }
     auto& sprite = entity.getComponent<SpriteComponent>();
     return sprite.flip == SDL_FLIP_HORIZONTAL;
 }
@@ -167,18 +200,27 @@ void goToScene(const std::string& scene_name) {
 
 //* Camera follow
 void toggleCameraFollow(Entity entity, bool value) {
+    if (!entity.hasComponent<CameraFollowComponent>()) {
+        return;
+    }
     auto& camera_follow = entity.getComponent<CameraFollowComponent>();
     camera_follow.is_active = value;
 }
 
 //* Mouse follow
 void toggleMouseFollow(Entity entity, bool value) {
+    if (!entity.hasComponent<MouseFollowComponent>()) {
+        return;
+    }
     auto& mouse_follow = entity.getComponent<MouseFollowComponent>();
     mouse_follow.is_active = value;
 }
 
 //* Flashlight
 void toggleFlashlight(Entity entity, bool value) {
+    if (!entity.hasComponent<FlashlightComponent>()) {
+        return;
+    }
     auto& flashlight = entity.getComponent<FlashlightComponent>();
     if (!value){ // Turn on
         flashlight.mode = FlashlightMode::CircleOnly;
@@ -189,6 +231,9 @@ void toggleFlashlight(Entity entity, bool value) {
 
 //* Sprite 
 void toggleSpriteFlip(Entity entity, bool value) {
+    if (!entity.hasComponent<SpriteComponent>()) {
+        return;
+    }
     auto& sprite = entity.getComponent<SpriteComponent>();
     sprite.flip_to_mouse = value;
 }

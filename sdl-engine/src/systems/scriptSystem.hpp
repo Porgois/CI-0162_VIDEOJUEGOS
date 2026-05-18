@@ -17,6 +17,37 @@ public:
         requireComponent<ScriptComponent>();
     }
 
+    sol::optional<sol::environment> getScriptEnvironment(Entity entity) const {
+        auto it = entity_environments.find(entity.getId());
+        if (it != entity_environments.end()) {
+            return it->second;
+        }
+
+        if (!entity.hasComponent<ScriptComponent>()) {
+            return sol::nullopt;
+        }
+
+        const auto& script = entity.getComponent<ScriptComponent>();
+        if (script.env.valid()) {
+            return script.env;
+        }
+
+        if (script.update.valid()) {
+            return sol::get_environment(script.update);
+        }
+        if (script.start.valid()) {
+            return sol::get_environment(script.start);
+        }
+        if (script.onCollision.valid()) {
+            return sol::get_environment(script.onCollision);
+        }
+        if (script.onClick.valid()) {
+            return sol::get_environment(script.onClick);
+        }
+
+        return sol::nullopt;
+    }
+
     void createLuaBindings(
         sol::state& lua,
         std::unique_ptr<Registry>& registry,
@@ -109,6 +140,30 @@ public:
         lua.set_function("get_collider_offset", getColliderOffset);
         lua.set_function("get_tag", getTag);
         lua.set_function("is_flipped", getFlip);
+
+        lua.set_function("get_script", [this, &lua](Entity entity) -> sol::object {
+            auto env = getScriptEnvironment(entity);
+            if (!env) {
+                return sol::nil;
+            }
+            return sol::object(lua, env.value());
+        });
+        lua.set_function("get_script_variable", [this, &lua](Entity entity, const std::string& key) -> sol::object {
+            auto env = getScriptEnvironment(entity);
+            if (!env) {
+                return sol::nil;
+            }
+            sol::object value = env.value()[key];
+            return value.valid() ? value : sol::nil;
+        });
+        lua.set_function("set_script_variable", [this](Entity entity, const std::string& key, sol::object value) {
+            auto env = getScriptEnvironment(entity);
+            if (!env) {
+                return false;
+            }
+            env.value()[key] = value;
+            return true;
+        });
 
         // Generic function-calling
         lua.set_function("call_function", [this](Entity entity, const std::string& func_name, sol::variadic_args args) {

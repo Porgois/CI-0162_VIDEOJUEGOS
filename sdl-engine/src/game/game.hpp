@@ -35,6 +35,9 @@ class Game {
         void render();
         void runScene();
         void processInput();
+        
+        void loadRevolverState();
+        void saveRevolverState();
   
         Game();
         ~Game();

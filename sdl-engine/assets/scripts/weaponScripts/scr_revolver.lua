@@ -5,13 +5,10 @@ local can_shoot = true
 
 -- Ammo
 local max_ammo = 6
-local current_ammo = 6
 
 function start()
-    if GameState and GameState.player_ammo ~= nil then
-        current_ammo = GameState.player_ammo
-    else
-        if GameState then GameState.player_ammo = current_ammo end
+    if GameState and GameState.player_ammo == nil then
+        GameState.player_ammo = max_ammo
     end
 
     if GameState and GameState.player_max_ammo ~= nil then
@@ -64,8 +61,6 @@ function shoot_projectile()
 
     can_shoot = false
     cooldown_timer = shoot_cooldown
-    current_ammo = current_ammo - 1
-    if GameState then GameState.player_ammo = current_ammo end
 end
 
 function update()
@@ -79,4 +74,29 @@ function update()
     if is_button_just_pressed("lmb") then
         shoot_projectile()
     end
+end
+
+function save_player_state()
+    if GameState then
+        if GameState.player_ammo == nil then
+            GameState.player_ammo = max_ammo
+        end
+        print("[REVOLVER] save_player_state: GameState.player_ammo=" .. tostring(GameState.player_ammo))
+    end
+end
+
+function load_player_state()
+    if GameState then
+        if GameState.player_ammo == nil then
+            GameState.player_ammo = max_ammo
+            print("[REVOLVER] load_player_state: initialized player_ammo=" .. tostring(GameState.player_ammo))
+        else
+            print("[REVOLVER] load_player_state: restored player_ammo=" .. tostring(GameState.player_ammo))
+        end
+    end
+end
+
+if GameState ~= nil then
+    GameState.save_player_state = save_player_state
+    GameState.load_player_state = load_player_state
 end

@@ -10,7 +10,7 @@ local damage_anim_duration = 0.25
 
 -- Drop chance
 local drop_chance = 1.0         -- 75% chance to drop anything
-local ammo_chance = 0.2        -- 20% chance for ammo, 80% for health
+local ammo_chance = 0.9        -- 90% chance for ammo, 10% for health
 local on_destroyed_triggered = false
 
 -- State machine

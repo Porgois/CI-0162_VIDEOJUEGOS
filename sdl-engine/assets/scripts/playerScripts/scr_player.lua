@@ -130,14 +130,20 @@ function take_damage(damage_amount)
     transition_to("damage")
 end
 
+function add_weapon_ammo(other, n)
+    play_audio("assets/soundEffects/misc/pickups/ammo_pickup.wav", 0, 30)
+    call_function(other, "spawn_text", "+" .. n .." ammo!")
+    GameState.add_ammo(n)
+
+end
+
 function on_collision(other)
   
     if get_tag(other) == "t_ammo_pickup" then -- AMMO
-        call_function(other, "spawn_text", "+3 ammo!")
-
+       
         if GameState and GameState.add_ammo then
-            play_audio("assets/soundEffects/misc/pickups/ammo_pickup.wav", 0, 30)
-            GameState.add_ammo(3)
+            local ammo_amount = get_script_variable(other, "default_ammo") or 2 -- In case it fails
+            add_weapon_ammo(other, ammo_amount)
         end
 
         delete_entity(other)
@@ -172,7 +178,7 @@ function update()
     if GameState and GameState.set_reload_menu and not_dead and is_button_just_pressed("rmb") then
         GameState.set_reload_menu(not GameState.reload_menu_open)
 
-        -- Play revolver open/close audio
+        -- Play revolver open/close and flashlight audio
         if not GameState.reload_menu_open then
             play_audio("assets/soundEffects/misc/flashlight/flashlight_off.wav")
             play_audio("assets/soundEffects/weapons/reload/cyllinder_close.wav", 0, 10)

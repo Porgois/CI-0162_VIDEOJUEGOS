@@ -40,4 +40,10 @@ function start()
         slots = slot_positions
     })
     print("[DROP ZONE] registered zone x=" .. cfg.x .. " y=" .. cfg.y .. " w=" .. w .. " h=" .. h)
+
+    if GameState.reload_menu_open and GameState.pending_revolver_restore and GameState.restore_cylinder_state then
+        print("[DROP ZONE] restoring revolver cylinder immediately after zone registration")
+        GameState.restore_cylinder_state()
+        GameState.pending_revolver_restore = false
+    end
 end

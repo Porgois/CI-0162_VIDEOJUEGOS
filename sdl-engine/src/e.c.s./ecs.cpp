@@ -2,8 +2,16 @@
 
 int IComponent::nextId = 0;
 
-int Entity::getId() const {
-    return id;
+EntityIndex Entity::getId() const {
+    return index;
+}
+
+EntityIndex Entity::getIndex() const {
+    return index;
+}
+
+EntityGeneration Entity::getGeneration() const {
+    return generation;
 }
 
 std::string Entity::getName() const {
@@ -11,14 +19,27 @@ std::string Entity::getName() const {
 }
 
 void System::addSystemEntity(Entity entity) {
-    entities.push_back(entity);
+    auto it = std::find_if(entities.begin(), entities.end(),
+        [&entity](const Entity& other) {
+            return entity.getId() == other.getId();
+        });
+
+    if (it == entities.end()) {
+        entities.push_back(entity);
+    }
 }
 
 void System::removeSystemEntity(Entity entity) {
-    auto it = std::remove_if(entities.begin(), entities.end(), \
-        [&entity](Entity other) { return entity == other;} );
+    auto it = std::remove_if(entities.begin(), entities.end(),
+        [&entity](const Entity& other) {
+            return entity.getId() == other.getId();
+        });
     
     entities.erase(it, entities.end());
+}
+
+void System::clearEntities() {
+    entities.clear();
 }
 
 std::vector<Entity> System::getSystemEntities() const {
@@ -38,79 +59,127 @@ Registry::~Registry() {
 }
 
 void Entity::kill() {
-    registry->destroyEntity(*this);
+    if (registry) {
+        registry->destroyEntity(*this);
+    }
 }
 
 Entity Registry::createEntity() {
-    int entity_id;
+    EntityIndex entityIndex;
+    EntityGeneration entityGeneration = 0;
 
-    if (freeIds.empty()) {
-        entity_id = numEntity++;
-
-        if (static_cast<long unsigned int>(entity_id) >= entityComponentSignatures.size()) {
-        entityComponentSignatures.resize(entity_id + 100); // Increases the size by 100
+    if (!freeIndices.empty()) {
+        entityIndex = freeIndices.front();
+        freeIndices.pop_front();
+        entityGeneration = entityGenerations[entityIndex];
+    } else {
+        entityIndex = numEntity++;
+        if (static_cast<size_t>(entityIndex) >= entityGenerations.size()) {
+            entityGenerations.resize(entityIndex + 100, 0);
+        }
+        entityGeneration = entityGenerations[entityIndex];
     }
-    } else { // Not empty, use an existing value
-        entity_id = freeIds.front();
-        freeIds.pop_front(); // Use the value and remove it
+
+    if (static_cast<size_t>(entityIndex) >= entityComponentSignatures.size()) {
+        entityComponentSignatures.resize(entityIndex + 100);
     }
 
-    Entity entity(entity_id);
+    Entity entity(entityIndex, entityGeneration);
     entity.registry = this;
     entitiesToAdd.insert(entity);
     
-    std::cout << "[REGISTRY] Entity " << entity_id << " created succesfully!" << std::endl;
+    std::cout << "[REGISTRY] Entity " << entityIndex << " created successfully!" << std::endl;
     return entity;
 }
 
 void Registry::destroyEntity(Entity entity) {
+    if (!isEntityValid(entity)) {
+        return;
+    }
+
     entitiesToDelete.insert(entity);
+    unregisterEntityName(entity);
+}
+
+bool Registry::isEntityValid(Entity entity) const {
+    if (entity.registry != this) {
+        return false;
+    }
+
+    EntityIndex entityIndex = entity.getIndex();
+    if (entityIndex < 0 || static_cast<size_t>(entityIndex) >= entityGenerations.size()) {
+        return false;
+    }
+
+    return entity.getGeneration() == entityGenerations[entityIndex];
+}
+
+void Registry::unregisterEntityName(Entity entity) {
+    for (auto it = namedEntities.begin(); it != namedEntities.end();) {
+        if (it->second.getId() == entity.getId() && it->second.getGeneration() == entity.getGeneration()) {
+            it = namedEntities.erase(it);
+        } else {
+            ++it;
+        }
+    }
 }
 
 void Registry::addSystemsEntity(Entity entity) {
-    const int entityId =entity.getId();
+    if (!isEntityValid(entity)) {
+        return;
+    }
 
-    const signature& entityComponentSignature \
-        = entityComponentSignatures[entityId];
+    EntityIndex entityId = entity.getId();
+    if (static_cast<size_t>(entityId) >= entityComponentSignatures.size()) {
+        return;
+    }
 
-    for (auto& system : systems) {
-        const auto& systemComponentSignature \
-            = system.second->getComponentSignature();
+    const signature& entityComponentSignature = entityComponentSignatures[entityId];
 
-        bool is_interested = (entityComponentSignature & systemComponentSignature) \
-            == systemComponentSignature;
+    for (auto& systemPair : systems) {
+        const auto& systemComponentSignature = systemPair.second->getComponentSignature();
 
+        bool is_interested = (entityComponentSignature & systemComponentSignature) == systemComponentSignature;
         if (is_interested) {
-            system.second->addSystemEntity(entity);
+            systemPair.second->addSystemEntity(entity);
         }
     }
 }
 
 void Registry::removeSystemsEntity(Entity entity) {
-    for (auto system : systems) {
-        system.second->removeSystemEntity(entity);
+    for (auto& systemPair : systems) {
+        systemPair.second->removeSystemEntity(entity);
     }
 }
 
 void Registry::update() {
     for (auto entity : entitiesToAdd) {
-        addSystemsEntity(entity);
+        if (isEntityValid(entity)) {
+            addSystemsEntity(entity);
+        }
     }
-
     entitiesToAdd.clear();
 
     for (auto& entity : entitiesToDelete) {
         removeSystemsEntity(entity);
-        entityComponentSignatures[entity.getId()].reset();
+        EntityIndex entityIndex = entity.getIndex();
 
-        freeIds.push_back(entity.getId());
+        if (static_cast<size_t>(entityIndex) < entityComponentSignatures.size()) {
+            entityComponentSignatures[entityIndex].reset();
+        }
+
+        if (static_cast<size_t>(entityIndex) < entityGenerations.size()) {
+            entityGenerations[entityIndex]++;
+        }
+
+        freeIndices.push_back(entityIndex);
     }
 
     entitiesToDelete.clear();
 }
 
 void Registry::registerEntityName(const std::string& name, Entity entity) {
-    namedEntities.emplace(name, entity);
+    namedEntities[name] = entity;
 }
 
 Entity Registry::findEntity(const std::string& name) const {
@@ -127,9 +196,25 @@ bool Registry::hasEntity(const std::string& name) const {
 
 void Registry::clearAllEntities() {
     namedEntities.clear();
-    for (int i = 0; i < numEntity; i++) {
-        removeSystemsEntity(Entity(i));
-        entityComponentSignatures[i].reset();
-        freeIds.push_back(i);
+    entitiesToAdd.clear();
+    entitiesToDelete.clear();
+    freeIndices.clear();
+
+    for (auto& systemPair : systems) {
+        systemPair.second->clearEntities();
     }
+
+    for (EntityIndex i = 0; i < numEntity; ++i) {
+        if (static_cast<size_t>(i) < entityComponentSignatures.size()) {
+            entityComponentSignatures[i].reset();
+        }
+
+        if (static_cast<size_t>(i) < entityGenerations.size()) {
+            entityGenerations[i]++;
+        }
+
+        freeIndices.push_back(i);
+    }
+
+    componentPools.clear();
 }

@@ -20,7 +20,6 @@
 #include "../systems/renderSystem.hpp"
 #include "../systems/tileRenderSystem.hpp"
 #include "../systems/mouseFollowSystem.hpp"
-//#include "../systems/damageSystem.hpp"
 #include "../systems/uISystem.hpp"
 #include "../systems/cameraMovementSystem.hpp"
 
@@ -146,7 +145,6 @@ void Game::setup() {
     registry->addSystem<FlipSystem>();
     registry->addSystem<TextRenderSystem>();
     registry->addSystem<UISystem>();
-    //registry->addSystem<DamageSystem>();
    
     lua.open_libraries(
         sol::lib::base,
@@ -163,8 +161,12 @@ void Game::setup() {
     lua["GameState"]["drop_state"] = "idle"; // states: "idle", "pending", "accepted", "rejected"
     lua["GameState"]["zone_config_queue"] = lua.create_table();
     lua["GameState"]["slotted_bullets"] = lua.create_table();
+    lua["GameState"]["revolver_cylinder"] = lua.create_table();
+    for (int slot = 1; slot <= 6; ++slot) {
+        lua["GameState"]["revolver_cylinder"][slot] = "empty";
+    }
 
-    // Load starting values from Lua config so they can be changed without recompiling.
+    // Load starting values from Lua config so they can be changed without recompiling
     sol::load_result config_result = lua.load_file("./assets/scripts/game_state_config.lua");
     if (config_result.valid()) {
         lua.script_file("./assets/scripts/game_state_config.lua");
@@ -185,6 +187,34 @@ void Game::setup() {
 
     registry->getSystem<ScriptSystem>().createLuaBindings(lua, registry, named_entities); // bindings
     scene_manager->loadScriptScenes("./assets/scripts/scenes/scenes.lua", lua); // scenes
+}
+
+static void callGameStateHook(sol::state& lua, const char* hook_name) {
+    sol::optional<sol::table> game_state = lua["GameState"];
+    if (!game_state) {
+        return;
+    }
+
+    sol::optional<sol::function> hook = game_state.value()[hook_name];
+    if (!hook) {
+        return;
+    }
+
+    sol::protected_function_result result = hook.value()();
+    if (!result.valid()) {
+        sol::error err = result;
+        std::cerr << "[GAME] Failed to call GameState." << hook_name << "(): " << err.what() << std::endl;
+    }
+}
+
+void Game::loadRevolverState() {
+    callGameStateHook(lua, "load_revolver_state");
+    callGameStateHook(lua, "load_player_state");
+}
+
+void Game::saveRevolverState() {
+    callGameStateHook(lua, "save_player_state");
+    callGameStateHook(lua, "save_revolver_state");
 }
 
 // Processes all kinds of input
@@ -317,6 +347,7 @@ void Game::render() {
 
 void Game::runScene() {
     scene_manager->loadScene();
+    loadRevolverState();
     std::cout << "[SCENE] loadScene done" << std::endl;
     registry->update();
     std::cout << "[SCENE] first registry->update() done" << std::endl;
@@ -330,6 +361,7 @@ void Game::runScene() {
         render();
     }
 
+    saveRevolverState();
     asset_manager->clearAssets();
     registry->clearAllEntities();
     named_entities.clear();

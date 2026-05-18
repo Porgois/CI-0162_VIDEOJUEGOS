@@ -1,3 +1,7 @@
+-- Default values
+default_ammo = 4
+default_health = 1
+
 -- "Magnetism"
 local effective_pickup_range = 25
 local speed = 20
@@ -5,6 +9,10 @@ local speed = 20
 -- Text
 local text_entity = dofile("./assets/scripts/entities/e_text.lua")
 local text_spawn_offset = 3
+
+function get_default_ammo()
+    return default_ammo
+end
 
 function start()
     play_animation(this, "glow")

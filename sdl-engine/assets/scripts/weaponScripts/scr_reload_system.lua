@@ -1,6 +1,7 @@
 local bullet_entity   = dofile("./assets/scripts/entities/e_reload_bullet.lua")
 local drop_zone_entity = dofile("./assets/scripts/entities/e_bullet_drop_zone.lua")
-local starting_ammo = 3
+local default_ammo = 3
+local max_ammo_capacity = 12
 
 local bullets      = {}
 local bullet_homes = {}
@@ -27,23 +28,27 @@ local RELOAD_UI_Y   = 280.0
 
 local cylinder_index = 1 -- current chamber position; advances every shot like a real cylinder
 local menu_initialized = false
+local pending_cylinder_restore = false
 local saved_bullet_positions = {}
 
 function start()
     GameState.reload_menu_open = false
     GameState.drop_state = "idle"
     GameState.dropped_bullet = nil
+    GameState.pending_revolver_restore = false
     GameState.spend_casing = spend_casing
     GameState.set_reload_menu = set_reload_menu
     GameState.add_ammo = add_ammo
 
-    if GameState and GameState.player_ammo ~= nil then
-        starting_ammo = GameState.player_ammo
-    else
-        if GameState then
-            GameState.player_ammo = starting_ammo
-        end
+    if GameState.revolver_cylinder == nil then
+        GameState.revolver_cylinder = {"empty", "empty", "empty", "empty", "empty", "empty"}
     end
+
+    if GameState and GameState.player_ammo == nil then
+        GameState.player_ammo = default_ammo
+    end
+
+    print("AMMO: " .. GameState.player_ammo)
 
     set_position(this, -1000, -1000)
 end
@@ -94,10 +99,29 @@ function set_reload_menu(open)
             return
         end
         GameState.reload_menu_open = true
-        if not menu_initialized then
+        if not menu_initialized or #all_zones == 0 then
+            local ammo_to_place = GameState and GameState.player_ammo or default_ammo
+            print("[RELOAD] opening menu with GameState.player_ammo=" .. tostring(GameState and GameState.player_ammo) .. ", placing " .. tostring(ammo_to_place) .. " bullets")
             spawn_drop_zones(ZONE_COUNT)
-            place_bullets(starting_ammo)
+            place_bullets(ammo_to_place)
+            if GameState.zones == nil or #GameState.zones == 0 then
+                pending_cylinder_restore = true
+                GameState.pending_revolver_restore = true
+            else
+                restore_cylinder_state()
+                GameState.pending_revolver_restore = false
+            end
             menu_initialized = true
+        else
+            local ammo_to_place = GameState and GameState.player_ammo or default_ammo
+            local grid_target = math.min(ammo_to_place, GRID_COLS * GRID_ROWS)
+            if #bullets < grid_target then
+                append_bullets(grid_target - #bullets)
+                reorder_grid()
+            elseif #bullets > grid_target then
+                remove_grid_bullets(#bullets - grid_target)
+                reorder_grid()
+            end
         end
         show_reload_entities()
         print("[RELOAD] menu opened")
@@ -146,6 +170,23 @@ function place_bullets(n)
         table.insert(bullets, bullet)
         table.insert(bullet_homes, { x = x, y = y })
         table.insert(all_bullets, bullet)
+    end
+end
+
+function remove_grid_bullets(n)
+    local remove_count = math.min(n, #bullets)
+    for i = 1, remove_count do
+        local bullet = table.remove(bullets)
+        table.remove(bullet_homes)
+        if bullet then
+            for j = #all_bullets, 1, -1 do
+                if all_bullets[j] == bullet then
+                    table.remove(all_bullets, j)
+                    break
+                end
+            end
+            delete_entity(bullet)
+        end
     end
 end
 
@@ -239,6 +280,10 @@ function unslot_bullet(bullet)
         if GameState.slotted_bullets then
             GameState.slotted_bullets[bullet] = nil
         end
+        local slot_index = find_slot_index(zone, slot)
+        if slot_index and GameState.revolver_cylinder then
+            GameState.revolver_cylinder[slot_index] = "empty"
+        end
         print("[RELOAD] unslotted bullet from slot")
     end
 end
@@ -273,6 +318,12 @@ function update()
 
     if not GameState.reload_menu_open then
         return
+    end
+
+    if pending_cylinder_restore and GameState.zones and #GameState.zones >= ZONE_COUNT then
+        restore_cylinder_state()
+        pending_cylinder_restore = false
+        GameState.pending_revolver_restore = false
     end
 
     if #GameState.zones < ZONE_COUNT then
@@ -327,6 +378,16 @@ function update()
                     GameState.slotted_bullets = {}
                 end
                 GameState.slotted_bullets[dropped] = true
+                local slot_index = find_slot_index(zone, best_slot)
+                if slot_index and GameState.revolver_cylinder then
+                    GameState.revolver_cylinder[slot_index] = "loaded"
+                end
+
+                -- Decrement when placing bullet
+                if GameState then
+                    GameState.player_ammo = GameState.player_ammo - 1
+                    print("[RELOAD] player_ammo decremented to " .. tostring(GameState.player_ammo))
+                end
 
                 cylinder_index = 1
 
@@ -366,27 +427,36 @@ function mark_slot_spent(zone_index, slot_index)
     end
 
     slot.spent = true
+    if GameState.revolver_cylinder then
+        GameState.revolver_cylinder[slot_index] = "spent"
+    end
     play_animation(slot.bullet, "empty")
     print("[RELOAD] slot " .. slot_index .. " in zone " .. zone_index .. " marked spent")
 end
 
 function add_ammo(n)
-    if not menu_initialized then
-        spawn_drop_zones(ZONE_COUNT)
-        place_bullets(starting_ammo)
-        menu_initialized = true
-        hide_reload_entities()
-    end
+    if GameState then
+        if GameState.player_ammo == nil then
+            GameState.player_ammo = 0
+        end
 
-    local max = GRID_COLS * GRID_ROWS
-    local available = max - #bullets
-    local to_spawn = math.min(n, available)
+        local ammo_to_add = n
+        if GameState.player_ammo + n > max_ammo_capacity then
+            local space = max_ammo_capacity - GameState.player_ammo
+            ammo_to_add = math.max(0, math.min(n, space))
+        end
 
-    if to_spawn > 0 then
-        append_bullets(to_spawn)
-        reorder_grid()
-        if GameState then
-            GameState.player_ammo = (GameState.player_ammo or starting_ammo) + to_spawn
+        GameState.player_ammo = GameState.player_ammo + ammo_to_add
+        print("[RELOAD] ammo to add: " .. tostring(ammo_to_add))
+        print("[RELOAD] picked up ammo, GameState.player_ammo: " .. tostring(GameState.player_ammo))
+
+        if GameState.reload_menu_open then
+            local available = max_ammo_capacity - #bullets
+            local to_spawn = math.min(ammo_to_add, available)
+            if to_spawn > 0 then
+                append_bullets(to_spawn)
+                reorder_grid()
+            end
         end
     end
 end
@@ -409,4 +479,107 @@ function clear_zones()
     drop_zones      = {}
     all_zones       = {}
     GameState.zones = {}
+    menu_initialized = false
+    pending_cylinder_restore = false
+end
+
+function restore_cylinder_state()
+    if GameState == nil or GameState.revolver_cylinder == nil or GameState.zones == nil then
+        return
+    end
+
+    local zone = GameState.zones[1]
+    if zone == nil or zone.slots == nil then
+        return
+    end
+
+    if GameState.slotted_bullets == nil then
+        GameState.slotted_bullets = {}
+    end
+
+    print("[RELOAD] restoring cylinder state from saved GameState")
+
+    for i = 1, #GameState.revolver_cylinder do
+        local state = GameState.revolver_cylinder[i]
+        if state == "loaded" or state == "spent" then
+            local slot = zone.slots[i]
+            if slot and not slot.occupied then
+                local bullet = spawn_entity(bullet_entity)
+                set_position(bullet, slot.x - 48, slot.y - 48)
+                slot.occupied = true
+                slot.spent = (state == "spent")
+                slot.bullet = bullet
+                GameState.slotted_bullets[bullet] = true
+                if state == "spent" then
+                    play_animation(bullet, "empty")
+                else
+                    play_animation(bullet, "full")
+                end
+                table.insert(all_bullets, bullet)
+            end
+        end
+    end
+end
+
+function load_revolver_state()
+    if GameState == nil then
+        return
+    end
+
+    if GameState.revolver_cylinder == nil then
+        GameState.revolver_cylinder = {"empty", "empty", "empty", "empty", "empty", "empty"}
+    else
+        for i = 1, 6 do
+            if GameState.revolver_cylinder[i] == nil then
+                GameState.revolver_cylinder[i] = "empty"
+            end
+        end
+    end
+
+    if GameState.player_ammo ~= nil then
+        print("[RELOAD] loaded persistent player_ammo=" .. tostring(GameState.player_ammo))
+    else
+        GameState.player_ammo = default_ammo
+        print("[RELOAD] no persistent player_ammo found; setting GameState.player_ammo=" .. tostring(default_ammo))
+    end
+
+    menu_initialized = false
+    pending_cylinder_restore = false
+    bullets = {}
+    bullet_homes = {}
+    drop_zones = {}
+    all_bullets = {}
+    all_zones = {}
+    if GameState then
+        GameState.slotted_bullets = {}
+        GameState.zones = {}
+        GameState.zone_config_queue = {}
+        GameState.reload_menu_open = false
+        GameState.pending_revolver_restore = false
+        GameState.drop_state = "idle"
+        GameState.dropped_bullet = nil
+    end
+end
+
+function save_revolver_state()
+    if GameState == nil or GameState.revolver_cylinder == nil or GameState.zones == nil then
+        return
+    end
+
+    for i = 1, 6 do
+        local slot = GameState.zones[1] and GameState.zones[1].slots and GameState.zones[1].slots[i]
+        if slot == nil or not slot.occupied then
+            GameState.revolver_cylinder[i] = "empty"
+        elseif slot.spent then
+            GameState.revolver_cylinder[i] = "spent"
+        else
+            GameState.revolver_cylinder[i] = "loaded"
+        end
+    end
+end
+
+if GameState ~= nil then
+    GameState.load_revolver_state = load_revolver_state
+    GameState.save_revolver_state = save_revolver_state
+    GameState.restore_cylinder_state = restore_cylinder_state
 end

@@ -247,9 +247,11 @@ void SceneLoader::loadScript(sol::state &lua, Entity &entity, const sol::table &
 
     // on_awake runs immediately
     sol::optional<sol::function> has_on_awake = env["on_awake"];
+    env["this"] = entity;
+    env["script"] = env;
+
     if (has_on_awake != sol::nullopt)
     {
-        env["this"] = entity;
         has_on_awake.value()();
     }
 
@@ -258,7 +260,7 @@ void SceneLoader::loadScript(sol::state &lua, Entity &entity, const sol::table &
     sol::function start = env["start"].get_or(sol::function{});
     sol::function on_collision = env["on_collision"].get_or(sol::function{});
 
-    entity.addComponent<ScriptComponent>(update, start, on_click, on_collision);
+    entity.addComponent<ScriptComponent>(update, start, on_click, on_collision, env);
 }
 
 void SceneLoader::loadSprite(Entity &entity, const sol::table &components)
