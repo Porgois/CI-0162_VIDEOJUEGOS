@@ -217,6 +217,58 @@ void Game::saveRevolverState() {
     callGameStateHook(lua, "save_revolver_state");
 }
 
+void Game::requestSceneTransition() {
+    if (scene_transition_state == SceneTransitionState::None) {
+        scene_transition_state = SceneTransitionState::FadeOut;
+        scene_transition_alpha = 0.0f;
+    }
+}
+
+void Game::updateTransition() {
+    if (scene_transition_state == SceneTransitionState::None) {
+        return;
+    }
+
+    float step = static_cast<float>(delta_time) / scene_transition_duration;
+    if (scene_transition_state == SceneTransitionState::FadeOut) {
+        scene_transition_alpha += step;
+        if (scene_transition_alpha >= 1.0f) {
+            scene_transition_alpha = 1.0f;
+            scene_transition_state = SceneTransitionState::FadeHoldBefore;
+            scene_transition_hold_timer = 0.0f;
+        }
+    } else if (scene_transition_state == SceneTransitionState::FadeHoldBefore) {
+        scene_transition_hold_timer += static_cast<float>(delta_time);
+        if (scene_transition_hold_timer >= scene_transition_hold_duration) {
+            scene_manager->stopScene();
+            scene_transition_state = SceneTransitionState::FadeHoldAfter;
+            scene_transition_hold_timer = 0.0f;
+        }
+    } else if (scene_transition_state == SceneTransitionState::FadeHoldAfter) {
+        scene_transition_hold_timer += static_cast<float>(delta_time);
+        if (scene_transition_hold_timer >= scene_transition_hold_duration) {
+            scene_transition_state = SceneTransitionState::FadeIn;
+        }
+    } else if (scene_transition_state == SceneTransitionState::FadeIn) {
+        scene_transition_alpha -= step;
+        if (scene_transition_alpha <= 0.0f) {
+            scene_transition_alpha = 0.0f;
+            scene_transition_state = SceneTransitionState::None;
+        }
+    }
+}
+
+void Game::renderTransition() {
+    if (scene_transition_state == SceneTransitionState::None) {
+        return;
+    }
+
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, static_cast<Uint8>(scene_transition_alpha * 255.0f));
+    SDL_Rect overlay = {0, 0, window_width, window_height};
+    SDL_RenderFillRect(renderer, &overlay);
+}
+
 // Processes all kinds of input
 void Game::processInput() {
     SDL_Event sdl_event;
@@ -308,6 +360,8 @@ void Game::update() {
     registry->getSystem<MouseFollowSystem>().update(camera, zoom_level);
     registry->getSystem<BoxCollisionSystem>().update(event_manager, lua);
     registry->getSystem<CircleCollisionSystem>().update(event_manager);
+
+    updateTransition();
 }
 
 // Renders the screen contents
@@ -342,17 +396,18 @@ void Game::render() {
         registry->getSystem<UISystem>().debug_draw(renderer);
     }
 
+    renderTransition();
     SDL_RenderPresent(renderer);
 }
 
 void Game::runScene() {
     scene_manager->loadScene();
-    loadRevolverState();
     std::cout << "[SCENE] loadScene done" << std::endl;
     registry->update();
     std::cout << "[SCENE] first registry->update() done" << std::endl;
     registry->getSystem<ScriptSystem>().start(lua);
     std::cout << "[SCENE] ScriptSystem::start() done" << std::endl;
+    loadRevolverState();
     scene_manager->startScene();
 
     while(scene_manager->isRunning()) {

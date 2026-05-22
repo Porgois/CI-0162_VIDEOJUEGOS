@@ -30,11 +30,26 @@ class Game {
         bool is_running = false;
         bool is_debug_mode = false;
 
+        enum class SceneTransitionState {
+            None,
+            FadeOut,
+            FadeHoldBefore,
+            FadeHoldAfter,
+            FadeIn
+        };
+
+        SceneTransitionState scene_transition_state = SceneTransitionState::None;
+        float scene_transition_alpha = 0.0f;
+        float scene_transition_duration = 0.35f;
+        float scene_transition_hold_timer = 0.0f;
+
         void setup();
         void update();
         void render();
         void runScene();
         void processInput();
+        void updateTransition();
+        void renderTransition();
         
         void loadRevolverState();
         void saveRevolverState();
@@ -59,11 +74,14 @@ class Game {
         std::unique_ptr<Registry> registry;
         sol::state lua;
         std::unordered_map<std::string, Entity> named_entities;
+
+        float scene_transition_hold_duration = 0.5f;
         
         static Game& getInstance();
         void init();
         void run();
-        void destroy();        
+        void destroy();
+        void requestSceneTransition();
 };
 
 

@@ -6,24 +6,26 @@ local can_shoot = true
 -- Ammo
 local max_ammo = 6
 
-function start()
-    if GameState and GameState.player_ammo == nil then
-        GameState.player_ammo = max_ammo
-    end
-
-    if GameState and GameState.player_max_ammo ~= nil then
-        max_ammo = GameState.player_max_ammo
-    else
-        if GameState then GameState.player_max_ammo = max_ammo end
-    end
-end
-
 -- Cooldown
 local shoot_cooldown = 0.3
 local cooldown_timer = 0.0
 
 -- Offset
 local barrel_offset_x = 6.0
+
+function start()
+    if GameState then
+        if GameState.player_ammo == nil then
+            GameState.player_ammo = max_ammo
+        end
+
+        if GameState.player_max_ammo ~= nil then
+            max_ammo = GameState.player_max_ammo
+        else
+            GameState.player_max_ammo = max_ammo
+        end
+    end
+end
 
 function get_aim_angle()
     local x_pos, y_pos = get_position(this)

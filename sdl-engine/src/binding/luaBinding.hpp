@@ -193,9 +193,17 @@ void stopMusic() {
 }
 
 //* Scene switching
-void goToScene(const std::string& scene_name) {
-    Game::getInstance().scene_manager->setNextScene(scene_name);
-    Game::getInstance().scene_manager->stopScene();
+void goToScene(const std::string& scene_name, bool fade = false, float hold_duration = -1.0f) {
+    Game& game = Game::getInstance();
+    if (fade && hold_duration >= 0.0f) {
+        game.scene_transition_hold_duration = hold_duration;
+    }
+    game.scene_manager->setNextScene(scene_name);
+    if (fade) {
+        game.requestSceneTransition();
+    } else {
+        game.scene_manager->stopScene();
+    }
 }
 
 //* Camera follow
@@ -205,6 +213,7 @@ void toggleCameraFollow(Entity entity, bool value) {
     }
     auto& camera_follow = entity.getComponent<CameraFollowComponent>();
     camera_follow.is_active = value;
+    std::cout << "[LUA BINDING] Is camera active? " << camera_follow.is_active << std::endl; 
 }
 
 //* Mouse follow

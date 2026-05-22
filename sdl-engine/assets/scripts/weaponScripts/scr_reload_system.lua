@@ -50,6 +50,11 @@ function start()
 
     print("AMMO: " .. GameState.player_ammo)
 
+    -- Load saved revolver and player ammo state immediately when the reload system starts
+    if GameState and GameState.load_revolver_state ~= nil then
+        GameState.load_revolver_state()
+    end
+
     set_position(this, -1000, -1000)
 end
 
@@ -289,13 +294,27 @@ function unslot_bullet(bullet)
 end
 
 function spend_casing()
-    if GameState == nil or GameState.zones == nil then
+    if GameState == nil then
         print("[RELOAD] Cylinder not loaded - open reload menu to load bullets")
         return false
     end
 
-    local zone = GameState.zones[1]
-    local slot = zone and zone.slots[cylinder_index]
+    local zone = GameState.zones and GameState.zones[1]
+    if zone == nil or zone.slots == nil then
+        local state = GameState.revolver_cylinder and GameState.revolver_cylinder[cylinder_index]
+        local fired = false
+        if state == "loaded" then
+            GameState.revolver_cylinder[cylinder_index] = "spent"
+            print("[RELOAD] Fired slot #" .. cylinder_index .. " from stored cylinder state!")
+            fired = true
+        else
+            print("[RELOAD] Click — slot #" .. cylinder_index .. " is empty or spent!")
+        end
+        cylinder_index = (cylinder_index % ZONE_SLOTS) + 1
+        return fired
+    end
+
+    local slot = zone.slots[cylinder_index]
     local fired = false
 
     if slot and slot.occupied and not slot.spent then

@@ -23,6 +23,9 @@ local footstep_sounds = {
     "assets/soundEffects/footsteps/stone/sndFootShoRock6.wav"
 }
 
+-- Other
+follow_camera = true
+
 -- State machine
 local state = "idle"
 local states = {}
@@ -117,7 +120,11 @@ end
 
 function set_focus(focus)
     toggle_sprite_flip(this, focus)
-    toggle_camera_follow(this, focus)
+
+    if follow_camera then
+        toggle_camera_follow(this, focus)
+    end
+
     toggle_mouse_follow(revolver, focus)
     toggle_flashlight(this, focus)
 end
@@ -201,6 +208,7 @@ function update()
 end
 
 function start()
+
     if GameState and GameState.player_health ~= nil then
         current_health = GameState.player_health
     else

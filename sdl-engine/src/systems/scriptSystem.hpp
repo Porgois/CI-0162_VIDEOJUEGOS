@@ -156,6 +156,7 @@ public:
             sol::object value = env.value()[key];
             return value.valid() ? value : sol::nil;
         });
+
         lua.set_function("set_script_variable", [this](Entity entity, const std::string& key, sol::object value) {
             auto env = getScriptEnvironment(entity);
             if (!env) {
@@ -214,7 +215,11 @@ public:
         });
 
         // Scene
-        lua.set_function("go_to_scene", goToScene);
+        lua.set_function("go_to_scene", sol::overload(
+            [](const std::string& scene_name) { goToScene(scene_name, false, -1.0f); },
+            [](const std::string& scene_name, bool fade) { goToScene(scene_name, fade, -1.0f); },
+            [](const std::string& scene_name, bool fade, float hold_duration) { goToScene(scene_name, fade, hold_duration); }
+        ));
 
         // Entity creation & deletion
         lua.set_function("spawn_entity", [&lua, &registry, &named_entities](const sol::table& entity_def) -> Entity {
