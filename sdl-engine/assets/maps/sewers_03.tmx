@@ -851,9 +851,6 @@
   <object id="14" name="collider_8" x="961.25" y="438.25" width="16.1667" height="147.75"/>
  </objectgroup>
  <objectgroup id="15" name="Objects">
-  <object id="15" name="e_gate.lua" x="715.575" y="423.182">
-   <point/>
-  </object>
   <object id="29" name="e_destructable_barrel_01.lua" x="717.417" y="288.667"/>
   <object id="34" name="e_destructable_barrel_01.lua" x="716.78" y="321.402"/>
   <object id="40" name="e_ammo_pickup.lua" x="1000" y="339.5"/>
@@ -863,7 +860,7 @@
   </object>
   <object id="43" name="e_enemy_duck.lua" x="799.75" y="478.75"/>
   <object id="44" name="e_enemy_duck.lua" x="884" y="514.25"/>
-  <object id="47" name="e_game_done.lua" x="715.818" y="431.031">
+  <object id="47" name="e_game_done.lua" x="736.363" y="427.213">
    <point/>
   </object>
  </objectgroup>
