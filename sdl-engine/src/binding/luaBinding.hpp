@@ -213,7 +213,6 @@ void toggleCameraFollow(Entity entity, bool value) {
     }
     auto& camera_follow = entity.getComponent<CameraFollowComponent>();
     camera_follow.is_active = value;
-    std::cout << "[LUA BINDING] Is camera active? " << camera_follow.is_active << std::endl; 
 }
 
 //* Mouse follow
@@ -283,6 +282,16 @@ void setTextText(Entity entity, std::string new_text = "") {
         std::cerr << "[LUA BINDING] Error: Entity has no text component!\n" << std::endl;
     }
     
+}
+
+//* Animation
+bool isAnimationFinished(Entity entity) {
+    if (!entity.hasComponent<AnimationComponent>()) {
+        return false;
+    }
+
+    auto& animation = entity.getComponent<AnimationComponent>();
+    return animation.isFinished();
 }
     
 #endif // LUA_BINDING_HPP

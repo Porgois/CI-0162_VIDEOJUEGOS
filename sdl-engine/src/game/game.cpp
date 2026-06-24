@@ -229,7 +229,7 @@ void Game::updateTransition() {
         return;
     }
 
-    float step = static_cast<float>(delta_time) / scene_transition_duration;
+    float step = static_cast<float>(delta_time) / scene_enter_transition_duration;
     if (scene_transition_state == SceneTransitionState::FadeOut) {
         scene_transition_alpha += step;
         if (scene_transition_alpha >= 1.0f) {
@@ -239,14 +239,14 @@ void Game::updateTransition() {
         }
     } else if (scene_transition_state == SceneTransitionState::FadeHoldBefore) {
         scene_transition_hold_timer += static_cast<float>(delta_time);
-        if (scene_transition_hold_timer >= scene_transition_hold_duration) {
+        if (scene_transition_hold_timer >= scene_transition_hold_duration_before) {
             scene_manager->stopScene();
             scene_transition_state = SceneTransitionState::FadeHoldAfter;
             scene_transition_hold_timer = 0.0f;
         }
     } else if (scene_transition_state == SceneTransitionState::FadeHoldAfter) {
         scene_transition_hold_timer += static_cast<float>(delta_time);
-        if (scene_transition_hold_timer >= scene_transition_hold_duration) {
+        if (scene_transition_hold_timer >= scene_transition_hold_duration_after) {
             scene_transition_state = SceneTransitionState::FadeIn;
         }
     } else if (scene_transition_state == SceneTransitionState::FadeIn) {

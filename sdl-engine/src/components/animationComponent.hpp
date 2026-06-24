@@ -32,6 +32,23 @@ struct AnimationComponent {
         }
         return it->second;
     }
+
+    bool isFinished() const {
+        auto it = clips.find(current_animation);
+        if (it == clips.end()) {
+            return true;
+        }
+
+        const AnimationClip& clip = it->second;
+        if (clip.loop) {
+            return false;
+        }
+
+        Uint32 elapsed = SDL_GetTicks() - start_time;
+        Uint32 duration = (clip.frame_count * 1000) / clip.speed;
+        
+        return elapsed >= duration;
+    }
 };
 
 #endif // ANIMATION_COMPONENT_HPP

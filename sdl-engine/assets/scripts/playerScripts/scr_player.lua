@@ -25,6 +25,7 @@ local footstep_sounds = {
 
 -- Other
 follow_camera = true
+local flashlight_disabled = false  -- flag to prevent auto-toggling flashlight
 
 -- State machine
 local state = "idle"
@@ -129,6 +130,15 @@ function set_focus(focus)
     toggle_flashlight(this, focus)
 end
 
+-- Function for external scripts (like enemies) to disable/enable flashlight
+-- This completely overrides the normal flashlight behavior
+function set_flashlight_disabled(disabled)
+    flashlight_disabled = disabled
+    -- When disabling, turn OFF the flashlight immediately regardless of player focus state
+    -- When enabling, turn ON the flashlight immediately
+    toggle_flashlight(this, not disabled)
+end
+
 function take_damage(damage_amount)
     if state == "dead" then return end
     play_audio("assets/soundEffects/misc/hits/hit_flesh.wav", 0, 30)
@@ -198,7 +208,13 @@ function update()
     end
 
     if not (GameState and GameState.reload_menu_open) then
-        set_focus(true)
+        if flashlight_disabled then
+            toggle_sprite_flip(this, true)
+            if follow_camera then toggle_camera_follow(this, true) end
+            toggle_mouse_follow(revolver, true)
+        else
+            set_focus(true)
+        end
         states[state].update()
     else
         set_focus(false)

@@ -7,7 +7,7 @@ local can_shoot = true
 local max_ammo = 6
 
 -- Cooldown
-local shoot_cooldown = 0.3
+local shoot_cooldown = 1.0
 local cooldown_timer = 0.0
 
 -- Offset

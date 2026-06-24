@@ -53,15 +53,15 @@ public:
         std::unique_ptr<Registry>& registry,
         std::unordered_map<std::string, Entity>& named_entities
     ) {
-        // Classes
+        //* Classes
         lua.new_usertype<Entity>("entity");
 
-        // Controls
+        //* Controls
         lua.set_function("is_action_active", isActionActive);
         lua.set_function("is_button_pressed",  isButtonPressed);
         lua.set_function("is_button_just_pressed", isButtonJustPressed);
 
-        // Misc
+        //* Misc
         lua.set_function("play_animation", setAnimation);
         lua.set_function("toggle_camera_follow", toggleCameraFollow);
         lua.set_function("toggle_mouse_follow", toggleMouseFollow);
@@ -72,7 +72,10 @@ public:
         lua.set_function("remove_box_collider", removeBoxCollider);
         lua.set_function("shake_camera", shakeCamera);
         
-        // Audio with overloads for convenience
+        //* Animation
+        lua.set_function("is_animation_finished", isAnimationFinished);
+
+        //* Audio
         lua.set_function("play_audio", sol::overload(
             [](const std::string& path) { playAudio(path, 0, 128); },
             [](const std::string& path, int loops) { playAudio(path, loops, 128); },
@@ -117,7 +120,7 @@ public:
         
         lua.set_function("stop_music", stopMusic);
 
-        // Setters
+        //* Setters
         lua.set_function("set_velocity", setVelocity);
         lua.set_function("set_position", setPosition);
         lua.set_function("set_rotation", setRotation);
@@ -128,7 +131,7 @@ public:
             sprite.flip = flipped ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
         });
 
-        // Getters
+        //* Getters
         lua.set_function("get_velocity", getVelocity);
         lua.set_function("get_position", getPosition);
         lua.set_function("get_pivoted_position", getPivotedPosition);

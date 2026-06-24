@@ -17,7 +17,7 @@ struct FlashlightComponent {
     // Cone texture dimensions
     int cone_width = 200;
     int cone_height = 180;
-    int cone_end_offset = 60.0f;
+    int cone_end_offset = 20.0f;
 
     int cone_origin_x = 10;
     int cone_origin_y = cone_height / 2; // half of the cone height
@@ -35,7 +35,11 @@ struct FlashlightComponent {
     // Dynamic scale
     float min_scale = 0.2f;
     float max_scale = 2.0f;
+    float max_length = 2.0f;
+    float max_width = 1.25f;
     float reach = 250.0f; // distance at which max_scale is reached
+    float max_distance = 320.0f; // distance beyond which it stops following the mouse
+
     
     FlashlightComponent(const std::string& cone_texture_id = "flashlight_cone", \
         const std::string& circle_texture_id = "flashlight_source", \

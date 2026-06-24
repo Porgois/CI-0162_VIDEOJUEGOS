@@ -111,7 +111,8 @@ class FlashlightRenderSystem : public System {
                 float cy = (transform.position.y + flashlight.origin_offset_y) * zoom_level - camera.y;
 
                 float dist = sqrtf((mouse_x - cx) * (mouse_x - cx) + (mouse_y - cy) * (mouse_y - cy));
-                float t = std::clamp(dist / (flashlight.reach * zoom_level), 0.0f, 1.0f);
+                float clamped_dist = std::min(dist, flashlight.max_distance);
+                float t = std::clamp(clamped_dist / (flashlight.reach * zoom_level), 0.0f, 1.0f);
                 float distance_scale = flashlight.min_scale + t * (flashlight.max_scale - flashlight.min_scale);
                 float final_scale = distance_scale * flashlight.flicker_intensity;
 
@@ -131,16 +132,18 @@ class FlashlightRenderSystem : public System {
                 }
 
                 if (flashlight.mode == FlashlightMode::Full || flashlight.mode == FlashlightMode::ConeOnly) {
+                    float width_scale = std::min(final_scale, flashlight.max_width);
+                    float height_scale = std::min(final_scale, flashlight.max_length);
                     SDL_Point cone_origin = {
-                        static_cast<int>(flashlight.cone_origin_x * final_scale * zoom_level),
-                        static_cast<int>(flashlight.cone_origin_y * final_scale * zoom_level)
+                        static_cast<int>(flashlight.cone_origin_x * width_scale * zoom_level),
+                        static_cast<int>(flashlight.cone_origin_y * height_scale * zoom_level)
                     };
-                    float cone_end_offset = flashlight.cone_end_offset * (dist / (flashlight.reach * zoom_level));
+                    float cone_extension = flashlight.cone_end_offset * zoom_level;
                     SDL_Rect cone_dst = {
-                        static_cast<int>(cx) - static_cast<int>(flashlight.cone_origin_x * final_scale * zoom_level),
-                        static_cast<int>(cy) - static_cast<int>(flashlight.cone_origin_y * final_scale * zoom_level),
-                        static_cast<int>(dist + cone_end_offset),
-                        static_cast<int>(flashlight.cone_height * final_scale * zoom_level)
+                        static_cast<int>(cx) - static_cast<int>(flashlight.cone_origin_x * width_scale * zoom_level),
+                        static_cast<int>(cy) - static_cast<int>(flashlight.cone_origin_y * height_scale * zoom_level),
+                        static_cast<int>(clamped_dist + cone_extension),
+                        static_cast<int>(flashlight.cone_height * height_scale * zoom_level)
                     };
                     SDL_Texture* cone_texture = asset_manager->getTexture(flashlight.cone_texture_id);
                     SDL_SetTextureBlendMode(cone_texture, punch_blend);

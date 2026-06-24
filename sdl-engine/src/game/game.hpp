@@ -40,7 +40,7 @@ class Game {
 
         SceneTransitionState scene_transition_state = SceneTransitionState::None;
         float scene_transition_alpha = 0.0f;
-        float scene_transition_duration = 0.35f;
+        float scene_enter_transition_duration = 0.1f;
         float scene_transition_hold_timer = 0.0f;
 
         void setup();
@@ -75,7 +75,9 @@ class Game {
         sol::state lua;
         std::unordered_map<std::string, Entity> named_entities;
 
-        float scene_transition_hold_duration = 0.5f;
+        float scene_transition_hold_duration = 0.15f;
+        float scene_transition_hold_duration_before = 0.15f;
+        float scene_transition_hold_duration_after = 0.45f;
         
         static Game& getInstance();
         void init();
