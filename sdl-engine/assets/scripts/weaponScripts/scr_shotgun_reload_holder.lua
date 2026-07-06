@@ -7,7 +7,7 @@ function start()
 end
 
 function update()
-    if GameState and GameState.reload_menu_open then
+    if GameState and GameState.shotgun_reload_menu_open then
         set_position(this, home_x, home_y)
     else
         set_position(this, -10000, -10000)

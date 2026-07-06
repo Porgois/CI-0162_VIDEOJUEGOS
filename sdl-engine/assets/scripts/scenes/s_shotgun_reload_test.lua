@@ -30,8 +30,8 @@ scene = {
     maps = {},
     entities = {
         [0] = dofile("./assets/scripts/entities/e_cursor.lua"),
-            dofile("./assets/scripts/entities/e_revolver_reload_screen.lua"),
-            dofile("./assets/scripts/entities/e_bullet_holder.lua"
+            dofile("./assets/scripts/entities/e_shotgun_reload_screen.lua"),
+            dofile("./assets/scripts/entities/e_shell_holder.lua"
         )
     }
 }

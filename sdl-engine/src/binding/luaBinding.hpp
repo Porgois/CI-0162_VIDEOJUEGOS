@@ -20,10 +20,15 @@
 #include "../components/mouseFollowComponent.hpp"
 #include "../components/transformComponent.hpp"
 #include "../components/spriteComponent.hpp"
+#include "../components/childOfComponent.hpp"
 
 //* Controls
 bool isActionActive(const std::string& action) {
     return Game::getInstance().controller_manager->isActionActive(action);
+}
+
+bool isActionJustPressed(const std::string& action) {
+    return Game::getInstance().controller_manager->isActionJustPressed(action);
 }
 
 //* Mouse
@@ -84,6 +89,16 @@ void setRotation(Entity entity, double rotation) {
     transform.rotation = rotation;
 }
 
+void setChildOfOffset(Entity entity, double x, double y) {
+    if (!entity.hasComponent<ChildOfComponent>()) {
+        return;
+    }
+
+    auto& child_of = entity.getComponent<ChildOfComponent>();
+    child_of.offset.x = static_cast<float>(x);
+    child_of.offset.y = static_cast<float>(y);
+}
+
 //* Getters
 std::tuple<int, int> getPosition(Entity entity) {
     if (!entity.hasComponent<TransformComponent>()) {
@@ -119,6 +134,18 @@ std::tuple<int, int> getPreviousPosition(Entity entity) {
     return {
         static_cast<int>(transform.previous_position.x),
         static_cast<int>(transform.previous_position.y)
+    };
+}
+
+std::tuple<float, float> getChildOfOffset(Entity entity) {
+    if (!entity.hasComponent<ChildOfComponent>()) {
+        return {0.0f, 0.0f};
+    }
+
+    const auto& child_of = entity.getComponent<ChildOfComponent>();
+    return {
+        child_of.offset.x,
+        child_of.offset.y
     };
 }
 

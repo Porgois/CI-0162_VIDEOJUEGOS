@@ -29,8 +29,8 @@ class MouseFollowSystem : public System {
                 auto& parent_transform = child_of.parent.getComponent<TransformComponent>();
                 auto& parent_sprite = child_of.parent.getComponent<SpriteComponent>();
 
-                float cx = (parent_transform.position.x + parent_sprite.width  / 2) * zoom_level - camera.x;
-                float cy = (parent_transform.position.y + parent_sprite.height / 2) * zoom_level - camera.y;
+                float cx = ((parent_transform.position.x + parent_sprite.width  * 0.5f) + child_of.offset.x) * zoom_level - camera.x;
+                float cy = ((parent_transform.position.y + parent_sprite.height * 0.5f) + child_of.offset.y) * zoom_level - camera.y;
 
                 if (mouse_follow.is_active) {
                     int mouse_x, mouse_y;

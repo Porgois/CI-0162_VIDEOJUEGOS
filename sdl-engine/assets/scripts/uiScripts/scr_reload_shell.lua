@@ -2,6 +2,11 @@ local is_held = false
 local is_ejecting = false
 local eject_speed = 12
 local offscreen_pos = 900
+local eject_play_delay_time = 0.75
+
+-- shell drop sfx delay
+local shell_sound_pending = false
+local shell_sound_timer = 0.0
 
 function eject_bullet(slot)
     if slot then
@@ -9,14 +14,20 @@ function eject_bullet(slot)
         slot.occupied = false
         slot.spent = false
     end
+
     local slotted = GameState.revolver_reload_menu_open and GameState.revolver_slotted_bullets or GameState.shotgun_slotted_bullets
     if slotted then
         slotted[this] = nil
     end
+
     is_ejecting = true
     play_animation(this, "eject")
-    play_audio("assets/soundEffects/weapons/reload/bullet_01.wav")
-    print("[RELOAD BULLET] Ejecting spent bullet")
+
+    -- Delay the shell drop sound instead of playing it immediately
+    shell_sound_pending = true
+    shell_sound_timer = eject_play_delay_time
+
+    print("[RELOAD SHELL] Ejecting spent bullet")
 end
 
 function on_click()
@@ -45,6 +56,7 @@ function on_click()
             for _, slot in ipairs(zone.slots) do
                 if slot.occupied and slot.bullet == this then
                     if slot.spent then
+                        play_audio("assets/soundEffects/weapons/shotgun/shell_eject.wav")
                         eject_bullet(slot)
                     else
                         print("[RELOAD BULLET] Cannot pick up unspent bullet occupying a slot")
@@ -55,18 +67,29 @@ function on_click()
         end
     end
 
+    -- Grab
     is_held = true
     GameState.drop_state = "idle"
-    play_audio("assets/soundEffects/weapons/reload/bullet_02.wav")
+    play_audio("assets/soundEffects/weapons/shotgun/shell_grab.wav")
 end
 
 function update()
+    -- Tick the delayed shell-drop sound regardless of ejecting/held state
+    if shell_sound_pending then
+        shell_sound_timer = shell_sound_timer - get_delta_time()
+        if shell_sound_timer <= 0.0 then
+            play_audio("assets/soundEffects/weapons/shotgun/shell_drop.wav")
+            shell_sound_pending = false
+        end
+    end
+
     if is_ejecting then
         local x, y = get_position(this)
         local new_y = y + eject_speed
         set_position(this, x, new_y)
 
-        if new_y > offscreen_pos then
+        -- Don't delete the entity until the delayed sound has had a chance to play
+        if new_y > offscreen_pos and not shell_sound_pending then
             delete_entity(this)
         end
         return

@@ -1,6 +1,6 @@
-local bullet_entity   = dofile("./assets/scripts/entities/e_reload_bullet.lua")
+local bullet_entity   = dofile("./assets/scripts/entities/e_revolver_reload_bullet.lua")
 local drop_zone_entity = dofile("./assets/scripts/entities/e_bullet_drop_zone.lua")
-local default_ammo = 3
+local default_ammo = 2
 local max_ammo_capacity = 12
 
 local bullets      = {}
@@ -23,34 +23,67 @@ local ZONE_ORIGIN_Y = 342
 local ZONE_SLOTS    = 6
 local ZONE_RADIUS   = 78
 
+local SLOT_SNAP_RADIUS = 55
+
 local RELOAD_UI_X   = 545.0
 local RELOAD_UI_Y   = 280.0
 
-local cylinder_index = 1 -- current chamber position; advances every shot like a real cylinder
+local cylinder_index = 1
 local menu_initialized = false
 local pending_cylinder_restore = false
 local saved_bullet_positions = {}
 
 function start()
-    GameState.reload_menu_open = false
-    GameState.drop_state = "idle"
-    GameState.dropped_bullet = nil
-    GameState.pending_revolver_restore = false
-    GameState.spend_casing = spend_casing
-    GameState.set_reload_menu = set_reload_menu
-    GameState.add_ammo = add_ammo
+    if GameState.reload_menu_open == nil then
+        GameState.reload_menu_open = false
+    end
+    if GameState.revolver_reload_menu_open == nil then
+        GameState.revolver_reload_menu_open = false
+    end
+    if GameState.shotgun_reload_menu_open == nil then
+        GameState.shotgun_reload_menu_open = false
+    end
+    if GameState.drop_state == nil then
+        GameState.drop_state = "idle"
+    end
+    if GameState.dropped_bullet == nil then
+        GameState.dropped_bullet = nil
+    end
+    if GameState.pending_revolver_restore == nil then
+        GameState.pending_revolver_restore = false
+    end
+    if GameState.revolver_zones == nil then
+        GameState.revolver_zones = {}
+    end
+    if GameState.revolver_zone_config_queue == nil then
+        GameState.revolver_zone_config_queue = {}
+    end
+    if GameState.revolver_slotted_bullets == nil then
+        GameState.revolver_slotted_bullets = {}
+    end
+    GameState.spend_revolver_casing = spend_casing
+    if GameState.spend_casing == nil then
+        GameState.spend_casing = spend_casing
+    end
+    GameState.set_revolver_reload_menu = set_reload_menu
+    if GameState.set_reload_menu == nil then
+        GameState.set_reload_menu = set_reload_menu
+    end
+    GameState.add_revolver_ammo = add_ammo
+    if GameState.add_ammo == nil then
+        GameState.add_ammo = add_ammo
+    end
 
     if GameState.revolver_cylinder == nil then
         GameState.revolver_cylinder = {"empty", "empty", "empty", "empty", "empty", "empty"}
     end
 
-    if GameState and GameState.player_ammo == nil then
-        GameState.player_ammo = default_ammo
+    if GameState and GameState.player_revolver_ammo == nil then
+        GameState.player_revolver_ammo = default_revolver_ammo
     end
 
-    print("AMMO: " .. GameState.player_ammo)
+    print("AMMO: " .. GameState.player_revolver_ammo)
 
-    -- Load saved revolver and player ammo state immediately when the reload system starts
     if GameState and GameState.load_revolver_state ~= nil then
         GameState.load_revolver_state()
     end
@@ -91,7 +124,7 @@ function show_reload_entities()
     set_position(this, RELOAD_UI_X, RELOAD_UI_Y)
     restore_bullet_positions()
     for i, zone in ipairs(all_zones) do
-        local cfg = GameState.zones and GameState.zones[i]
+        local cfg = GameState.revolver_zones and GameState.revolver_zones[i]
         if cfg then
             set_position(zone, cfg.x, cfg.y)
         end
@@ -100,16 +133,20 @@ end
 
 function set_reload_menu(open)
     if open then
-        if GameState.reload_menu_open then
+        if GameState.revolver_reload_menu_open then
             return
         end
+        if GameState.shotgun_reload_menu_open and GameState.set_shotgun_reload_menu then
+            GameState.set_shotgun_reload_menu(false)
+        end
+        GameState.revolver_reload_menu_open = true
         GameState.reload_menu_open = true
         if not menu_initialized or #all_zones == 0 then
-            local ammo_to_place = GameState and GameState.player_ammo or default_ammo
-            print("[RELOAD] opening menu with GameState.player_ammo=" .. tostring(GameState and GameState.player_ammo) .. ", placing " .. tostring(ammo_to_place) .. " bullets")
+            local ammo_to_place = GameState and GameState.player_revolver_ammo or default_revolver_ammo
+            print("[RELOAD] opening menu with GameState.player_ammo=" .. tostring(GameState and GameState.player_revolver_ammo) .. ", placing " .. tostring(ammo_to_place) .. " bullets")
             spawn_drop_zones(ZONE_COUNT)
             place_bullets(ammo_to_place)
-            if GameState.zones == nil or #GameState.zones == 0 then
+            if GameState.revolver_zones == nil or #GameState.revolver_zones == 0 then
                 pending_cylinder_restore = true
                 GameState.pending_revolver_restore = true
             else
@@ -118,7 +155,7 @@ function set_reload_menu(open)
             end
             menu_initialized = true
         else
-            local ammo_to_place = GameState and GameState.player_ammo or default_ammo
+            local ammo_to_place = GameState and GameState.player_revolver_ammo or default_revolver_ammo
             local grid_target = math.min(ammo_to_place, GRID_COLS * GRID_ROWS)
             if #bullets < grid_target then
                 append_bullets(grid_target - #bullets)
@@ -131,10 +168,11 @@ function set_reload_menu(open)
         show_reload_entities()
         print("[RELOAD] menu opened")
     else
-        if not GameState.reload_menu_open then
+        if not GameState.revolver_reload_menu_open then
             return
         end
-        GameState.reload_menu_open = false
+        GameState.revolver_reload_menu_open = false
+        GameState.reload_menu_open = GameState.shotgun_reload_menu_open or false
         hide_reload_entities()
         GameState.dropped_bullet = nil
         GameState.drop_state = "idle"
@@ -144,9 +182,9 @@ end
 
 function spawn_drop_zones(n)
     drop_zones = {}
-    GameState.zone_config_queue = {}
+    GameState.revolver_zone_config_queue = {}
     for i = 1, n do
-        table.insert(GameState.zone_config_queue, {
+        table.insert(GameState.revolver_zone_config_queue, {
             x          = ZONE_ORIGIN_X + (i - 1) * ZONE_SPACING,
             y          = ZONE_ORIGIN_Y,
             slot_count = ZONE_SLOTS,
@@ -205,11 +243,9 @@ function append_bullets(n)
         local y = GRID_ORIGIN_Y + row * CELL_HEIGHT
         local bullet = spawn_entity(bullet_entity)
 
-        -- Register home position into saved state directly
         saved_bullet_positions[bullet] = { x = x, y = y }
         bullet_homes[grid_i + 1] = { x = x, y = y }
 
-        -- Spawn hidden; show_reload_entities will place them correctly when menu opens
         if GameState.reload_menu_open then
             set_position(bullet, x, y)
         else
@@ -256,8 +292,8 @@ function remove_bullet_from_grid(bullet)
 end
 
 function find_slot_for_bullet(bullet)
-    if GameState.zones == nil then return nil end
-    for _, zone in ipairs(GameState.zones) do
+    if GameState.revolver_zones == nil then return nil end
+    for _, zone in ipairs(GameState.revolver_zones) do
         for _, slot in ipairs(zone.slots) do
             if slot.bullet == bullet then
                 return slot, zone
@@ -282,8 +318,8 @@ function unslot_bullet(bullet)
         slot.occupied = false
         slot.spent = false
         slot.bullet = nil
-        if GameState.slotted_bullets then
-            GameState.slotted_bullets[bullet] = nil
+        if GameState.revolver_slotted_bullets then
+            GameState.revolver_slotted_bullets[bullet] = nil
         end
         local slot_index = find_slot_index(zone, slot)
         if slot_index and GameState.revolver_cylinder then
@@ -299,7 +335,7 @@ function spend_casing()
         return false
     end
 
-    local zone = GameState.zones and GameState.zones[1]
+    local zone = GameState.revolver_zones and GameState.revolver_zones[1]
     if zone == nil or zone.slots == nil then
         local state = GameState.revolver_cylinder and GameState.revolver_cylinder[cylinder_index]
         local fired = false
@@ -335,18 +371,18 @@ function update()
         return
     end
 
-    if not GameState.reload_menu_open then
+    if not GameState.revolver_reload_menu_open then
         return
     end
 
-    if pending_cylinder_restore and GameState.zones and #GameState.zones >= ZONE_COUNT then
+    if pending_cylinder_restore and GameState.revolver_zones and #GameState.revolver_zones >= ZONE_COUNT then
         restore_cylinder_state()
         pending_cylinder_restore = false
         GameState.pending_revolver_restore = false
     end
 
-    if #GameState.zones < ZONE_COUNT then
-        print("[RELOAD] waiting for zones: " .. #GameState.zones .. "/" .. ZONE_COUNT)
+    if #GameState.revolver_zones < ZONE_COUNT then
+        print("[RELOAD] waiting for zones: " .. #GameState.revolver_zones .. "/" .. ZONE_COUNT)
         return
     end
 
@@ -356,7 +392,7 @@ function update()
 
     local dropped = GameState.dropped_bullet
 
-    if GameState.slotted_bullets and GameState.slotted_bullets[dropped] then
+    if GameState.revolver_slotted_bullets and GameState.revolver_slotted_bullets[dropped] then
         unslot_bullet(dropped)
     end
 
@@ -365,56 +401,57 @@ function update()
     local bcy = by + 48
     print("[RELOAD] drop at bcx=" .. bcx .. " bcy=" .. bcy)
 
+    -- Find nearest unoccupied slot across all zones, no bounding box check
     local accepted = false
-    for _, zone in ipairs(GameState.zones) do
-        print("[RELOAD] checking zone x=" .. zone.x .. " y=" .. zone.y .. " w=" .. zone.w .. " h=" .. zone.h)
-        if bcx >= zone.x and bcx <= zone.x + zone.w
-        and bcy >= zone.y and bcy <= zone.y + zone.h then
+    local best_slot, best_dist = nil, math.huge
+    local best_zone = nil
 
-            local best_slot, best_dist = nil, math.huge
-            for _, slot in ipairs(zone.slots) do
-                if not slot.occupied then
-                    local dx = slot.x - bcx
-                    local dy = slot.y - bcy
-                    local dist = math.sqrt(dx * dx + dy * dy)
-                    if dist < best_dist then
-                        best_dist = dist
-                        best_slot = slot
-                    end
+    for _, zone in ipairs(GameState.revolver_zones) do
+        for _, slot in ipairs(zone.slots) do
+            if not slot.occupied then
+                local dx = slot.x - bcx
+                local dy = slot.y - bcy
+                local dist = math.sqrt(dx * dx + dy * dy)
+                if dist < best_dist then
+                    best_dist = dist
+                    best_slot = slot
+                    best_zone = zone
                 end
             end
-
-            if best_slot then
-                set_position(dropped, best_slot.x - 48, best_slot.y - 48)
-                best_slot.occupied = true
-                best_slot.spent = false
-                best_slot.bullet = dropped
-                accepted = true
-                play_animation(best_slot.bullet, "full")
-                play_audio("assets/soundEffects/weapons/reload/load_bullet.wav")
-
-                if GameState.slotted_bullets == nil then
-                    GameState.slotted_bullets = {}
-                end
-                GameState.slotted_bullets[dropped] = true
-                local slot_index = find_slot_index(zone, best_slot)
-                if slot_index and GameState.revolver_cylinder then
-                    GameState.revolver_cylinder[slot_index] = "loaded"
-                end
-
-                -- Decrement when placing bullet
-                if GameState then
-                    GameState.player_ammo = GameState.player_ammo - 1
-                    print("[RELOAD] player_ammo decremented to " .. tostring(GameState.player_ammo))
-                end
-
-                cylinder_index = 1
-
-                remove_bullet_from_grid(dropped)
-                reorder_grid()
-            end
-            break
         end
+    end
+
+    print("[RELOAD] nearest slot dist=" .. tostring(best_dist))
+
+    if best_slot and best_dist <= SLOT_SNAP_RADIUS then
+        local zone = best_zone
+        set_position(dropped, best_slot.x - 48, best_slot.y - 48)
+        best_slot.occupied = true
+        best_slot.spent = false
+        best_slot.bullet = dropped
+        accepted = true
+        play_animation(best_slot.bullet, "full")
+        play_audio("assets/soundEffects/weapons/reload/load_bullet.wav")
+
+        if GameState.revolver_slotted_bullets == nil then
+            GameState.revolver_slotted_bullets = {}
+        end
+        GameState.revolver_slotted_bullets[dropped] = true
+
+        local slot_index = find_slot_index(zone, best_slot)
+        if slot_index and GameState.revolver_cylinder then
+            GameState.revolver_cylinder[slot_index] = "loaded"
+        end
+
+        if GameState then
+            GameState.player_revolver_ammo = GameState.player_revolver_ammo - 1
+            print("[RELOAD] player_ammo decremented to " .. tostring(GameState.player_revolver_ammo))
+        end
+
+        cylinder_index = 1
+
+        remove_bullet_from_grid(dropped)
+        reorder_grid()
     end
 
     if not accepted then
@@ -427,22 +464,21 @@ function update()
 
     GameState.dropped_bullet = nil
     GameState.drop_state = "idle"
-
 end
 
 function mark_slot_spent(zone_index, slot_index)
-    if GameState.zones == nil then 
-        return 
+    if GameState.revolver_zones == nil then
+        return
     end
 
-    local zone = GameState.zones[zone_index]
-    if zone == nil then 
-        return 
+    local zone = GameState.revolver_zones[zone_index]
+    if zone == nil then
+        return
     end
 
     local slot = zone.slots[slot_index]
-    if slot == nil or not slot.occupied then 
-        return 
+    if slot == nil or not slot.occupied then
+        return
     end
 
     slot.spent = true
@@ -455,19 +491,19 @@ end
 
 function add_ammo(n)
     if GameState then
-        if GameState.player_ammo == nil then
-            GameState.player_ammo = 0
+        if GameState.player_revolver_ammo == nil then
+            GameState.player_revolver_ammo = 0
         end
 
         local ammo_to_add = n
-        if GameState.player_ammo + n > max_ammo_capacity then
-            local space = max_ammo_capacity - GameState.player_ammo
+        if GameState.player_revolver_ammo + n > max_ammo_capacity then
+            local space = max_ammo_capacity - GameState.player_revolver_ammo
             ammo_to_add = math.max(0, math.min(n, space))
         end
 
-        GameState.player_ammo = GameState.player_ammo + ammo_to_add
+        GameState.player_revolver_ammo = GameState.player_revolver_ammo + ammo_to_add
         print("[RELOAD] ammo to add: " .. tostring(ammo_to_add))
-        print("[RELOAD] picked up ammo, GameState.player_ammo: " .. tostring(GameState.player_ammo))
+        print("[RELOAD] picked up ammo, GameState.player_ammo: " .. tostring(GameState.player_revolver_ammo))
 
         if GameState.reload_menu_open then
             local available = max_ammo_capacity - #bullets
@@ -480,7 +516,6 @@ function add_ammo(n)
     end
 end
 
-
 function clear_bullets()
     for _, bullet in ipairs(all_bullets) do
         delete_entity(bullet)
@@ -488,7 +523,7 @@ function clear_bullets()
     bullets      = {}
     bullet_homes = {}
     all_bullets  = {}
-    GameState.slotted_bullets = {}
+    GameState.revolver_slotted_bullets = {}
 end
 
 function clear_zones()
@@ -497,23 +532,23 @@ function clear_zones()
     end
     drop_zones      = {}
     all_zones       = {}
-    GameState.zones = {}
+    GameState.revolver_zones = {}
     menu_initialized = false
     pending_cylinder_restore = false
 end
 
 function restore_cylinder_state()
-    if GameState == nil or GameState.revolver_cylinder == nil or GameState.zones == nil then
+    if GameState == nil or GameState.revolver_cylinder == nil or GameState.revolver_zones == nil then
         return
     end
 
-    local zone = GameState.zones[1]
+    local zone = GameState.revolver_zones[1]
     if zone == nil or zone.slots == nil then
         return
     end
 
-    if GameState.slotted_bullets == nil then
-        GameState.slotted_bullets = {}
+    if GameState.revolver_slotted_bullets == nil then
+        GameState.revolver_slotted_bullets = {}
     end
 
     print("[RELOAD] restoring cylinder state from saved GameState")
@@ -528,7 +563,7 @@ function restore_cylinder_state()
                 slot.occupied = true
                 slot.spent = (state == "spent")
                 slot.bullet = bullet
-                GameState.slotted_bullets[bullet] = true
+                GameState.revolver_slotted_bullets[bullet] = true
                 if state == "spent" then
                     play_animation(bullet, "empty")
                 else
@@ -555,10 +590,10 @@ function load_revolver_state()
         end
     end
 
-    if GameState.player_ammo ~= nil then
-        print("[RELOAD] loaded persistent player_ammo=" .. tostring(GameState.player_ammo))
+    if GameState.player_revolver_ammo ~= nil then
+        print("[RELOAD] loaded persistent player_ammo=" .. tostring(GameState.player_revolver_ammo))
     else
-        GameState.player_ammo = default_ammo
+        GameState.player_revolver_ammo = default_ammo
         print("[RELOAD] no persistent player_ammo found; setting GameState.player_ammo=" .. tostring(default_ammo))
     end
 
@@ -570,10 +605,12 @@ function load_revolver_state()
     all_bullets = {}
     all_zones = {}
     if GameState then
-        GameState.slotted_bullets = {}
-        GameState.zones = {}
-        GameState.zone_config_queue = {}
+        GameState.revolver_slotted_bullets = {}
+        GameState.revolver_zones = {}
+        GameState.revolver_zone_config_queue = {}
         GameState.reload_menu_open = false
+        GameState.revolver_reload_menu_open = false
+        GameState.shotgun_reload_menu_open = false
         GameState.pending_revolver_restore = false
         GameState.drop_state = "idle"
         GameState.dropped_bullet = nil
@@ -581,12 +618,12 @@ function load_revolver_state()
 end
 
 function save_revolver_state()
-    if GameState == nil or GameState.revolver_cylinder == nil or GameState.zones == nil then
+    if GameState == nil or GameState.revolver_cylinder == nil or GameState.revolver_zones == nil then
         return
     end
 
     for i = 1, 6 do
-        local slot = GameState.zones[1] and GameState.zones[1].slots and GameState.zones[1].slots[i]
+        local slot = GameState.revolver_zones[1] and GameState.revolver_zones[1].slots and GameState.revolver_zones[1].slots[i]
         if slot == nil or not slot.occupied then
             GameState.revolver_cylinder[i] = "empty"
         elseif slot.spent then

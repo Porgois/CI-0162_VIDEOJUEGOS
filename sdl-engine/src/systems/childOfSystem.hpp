@@ -32,9 +32,9 @@ class ChildOfSystem : public System {
                 );
 
                 // Preserve any already-set child offset on first update.
-                if (child_of.offset == glm::vec2(0.0f, 0.0f) &&
-                    transform.position != parent_center) {
+                if (!child_of.has_explicit_offset && transform.position != parent_center) {
                     child_of.offset = transform.position - parent_center;
+                    child_of.has_explicit_offset = true;
                 }
 
                 transform.position = parent_center + child_of.offset;

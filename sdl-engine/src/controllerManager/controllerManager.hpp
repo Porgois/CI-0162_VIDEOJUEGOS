@@ -12,6 +12,7 @@ class ControllerManager {
     private:
         std::map<std::string, int> action_key_name;
         std::map<int, bool> key_down;
+        std::unordered_map<int, bool> key_was_down;
 
         std::map<std::string, int> mouse_button_name;
         std::map<int, bool> mouse_button_down;
@@ -32,6 +33,7 @@ class ControllerManager {
         void keyDown(int key_code);
         void keyUp(int key_code);
         bool isActionActive(const std::string& action);
+        bool isActionJustPressed(const std::string& action);
 
         // Mouse
         void addMouseButton(const std::string& name, int button_code);
@@ -40,10 +42,11 @@ class ControllerManager {
         bool isMouseButtonDown(const std::string& name);
         bool isMouseButtonJustPressed(const std::string& name);
         void updateMouseButtonStates();
+        void updateKeyStates();
+        void updateInputStates();
 
         void setMousePosition(int x, int y);
         std::tuple<int, int> getMousePosition();
-
 };
 
 #endif // CONTROLLER_MANAGER_HPP

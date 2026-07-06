@@ -1,5 +1,6 @@
 -- Default values
 default_ammo = 4
+default_shells = 2
 default_health = 1
 
 -- "Magnetism"

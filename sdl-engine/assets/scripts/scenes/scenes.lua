@@ -1,6 +1,5 @@
 scenes = {
     [0] =
-    {name = "sewers_02", path = "./assets/scripts/scenes/sewerScenes/s_sewer_02.lua"},
-    {name = "sewers_03", path = "./assets/scripts/scenes/sewerScenes/s_sewer_03.lua"},
-    {name = "finished", path = "./assets/scripts/scenes/s_done.lua"}
+    {name = "sewers_02", path = "./assets/scripts/scenes/sewerScenes/s_test.lua"},
+    {name = "sewers_02", path = "./assets/scripts/scenes/s_shotgun_reload_test.lua"},
 }

@@ -174,15 +174,25 @@ void Game::setup() {
         if (config) {
             lua["GameState"]["player_health"] = config->get_or("player_health", 3);
             lua["GameState"]["player_max_health"] = config->get_or("player_max_health", 3);
-            lua["GameState"]["player_ammo"] = config->get_or("player_ammo", 6);
-            lua["GameState"]["player_max_ammo"] = config->get_or("player_max_ammo", 6);
+            lua["GameState"]["player_revolver_ammo"] = config->get_or("player_revolver_ammo", 6);
+            lua["GameState"]["player_max_revolver_ammo"] = config->get_or("player_max_revolver_ammo", 12);
+            lua["GameState"]["player_shotgun_ammo"] = config->get_or("player_shotgun_ammo", 3);
+            lua["GameState"]["player_max_shotgun_ammo"] = config->get_or("player_max_shotgun_ammo", 6);
+            lua["GameState"]["weapons"] = config->get_or("weapons", std::vector<std::string>{"revolver", "shotgun"});
+            lua["GameState"]["current_weapon_name"] = config->get_or("current_weapon_name", std::string("revolver"));
+            lua["GameState"]["current_weapon_slot"] = config->get_or("current_weapon_slot", 1);
         }
     } else {
         std::cout << "[GAME] Failed to load game_state_config.lua, using defaults." << std::endl;
         lua["GameState"]["player_health"] = 3;
         lua["GameState"]["player_max_health"] = 3;
-        lua["GameState"]["player_ammo"] = 6;
-        lua["GameState"]["player_max_ammo"] = 6;
+        lua["GameState"]["player_revolver_ammo"] = 6;
+        lua["GameState"]["player_max_revolver_ammo"] = 12;
+        lua["GameState"]["player_shotgun_ammo"] = 3;
+        lua["GameState"]["player_max_shotgun_ammo"] = 6;
+        lua["GameState"]["weapons"] = std::vector<std::string>{"revolver", "shotgun"};
+        lua["GameState"]["current_weapon_name"] = std::string("revolver");
+        lua["GameState"]["current_weapon_slot"] = 1;
     }
 
     registry->getSystem<ScriptSystem>().createLuaBindings(lua, registry, named_entities); // bindings
@@ -210,11 +220,17 @@ static void callGameStateHook(sol::state& lua, const char* hook_name) {
 void Game::loadRevolverState() {
     callGameStateHook(lua, "load_revolver_state");
     callGameStateHook(lua, "load_player_state");
+    callGameStateHook(lua, "load_revolver_player_state");
+    callGameStateHook(lua, "load_shotgun_state");
+    callGameStateHook(lua, "load_shotgun_player_state");
 }
 
 void Game::saveRevolverState() {
     callGameStateHook(lua, "save_player_state");
     callGameStateHook(lua, "save_revolver_state");
+    callGameStateHook(lua, "save_revolver_player_state");
+    callGameStateHook(lua, "save_shotgun_state");
+    callGameStateHook(lua, "save_shotgun_player_state");
 }
 
 void Game::requestSceneTransition() {
@@ -272,7 +288,7 @@ void Game::renderTransition() {
 // Processes all kinds of input
 void Game::processInput() {
     SDL_Event sdl_event;
-    controller_manager->updateMouseButtonStates();
+    controller_manager->updateInputStates();
 
     while (SDL_PollEvent(&sdl_event)) {
         switch (sdl_event.type) {

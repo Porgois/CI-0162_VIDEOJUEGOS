@@ -69,9 +69,6 @@ class SceneLoader {
 
         static void loadFlashlight(Entity& entity, const sol::table& components);
 
-        static void loadChildOf(Entity& entity, const sol::table& components, \
-            const std::unordered_map<std::string, Entity>& namedEntities);
-        
         SDL_RendererFlip getFlip(bool flip_d, bool flip_h, bool flip_v);
 
         double getAngle(bool flip_d, bool flip_h, bool flip_v);
@@ -103,6 +100,9 @@ class SceneLoader {
         void loadButton();
 
     public:
+        static void loadChildOf(Entity& entity, const sol::table& components, \
+            const std::unordered_map<std::string, Entity>& namedEntities);
+
         SceneLoader();
 
         ~SceneLoader();

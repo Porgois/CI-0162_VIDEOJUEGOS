@@ -1,5 +1,5 @@
 scene = {
-   sprites = {
+    sprites = {
         [0] =
         {asset_id = "cursor",          file_path = "./assets/ui/cursors/cursor.png"},
         {asset_id = "player",          file_path = "./assets/sprites/characters/player/player_sprite_sheet.png"},
@@ -8,6 +8,7 @@ scene = {
         {asset_id = "revolver",        file_path = "./assets/sprites/weapons/revolver.png"},
         {asset_id = "shotgun",        file_path = "./assets/sprites/weapons/shotgun.png"},
         {asset_id = "ammo_pickup",     file_path = "./assets/sprites/weapons/ammo_pickup_sprite_sheet.png"},
+        {asset_id = "shell_pickup",     file_path = "./assets/sprites/weapons/shell_pickup_sprite_sheet.png"},
         {asset_id = "health_pickup",     file_path = "./assets/sprites/weapons/health_pickup_sprite_sheet.png"},
         {asset_id = "terrain_sewers",  file_path = "./assets/sprites/tiles/sewers.png"},
         {asset_id = "projectile",      file_path = "./assets/sprites/effects/projectiles/projectile_bullet.png"},
@@ -23,15 +24,22 @@ scene = {
         {asset_id = "valve", file_path = "./assets/sprites/misc/valve_sprite_sheet.png"}
     },
     fonts = {
-        [0] = {font_id = "pixel_sleigh_24", file_path = "./assets/fonts/PixelSleigh.ttf", font_size = 24}
+        [0] = {font_id = "pixel_sleigh", file_path = "./assets/fonts/PixelSleigh.ttf", font_size = 14}
     },
     keys    = (function() local t = dofile("./assets/scripts/misc/keys.lua");    return t end)(),
     buttons = (function() local t = dofile("./assets/scripts/misc/buttons.lua"); return t end)(),
-    maps = {},
+    maps = {
+        map_path  = "./assets/maps/test_room.tmx",
+        tile_path = "./assets/maps/sewers.tsx",
+        tile_name = "terrain_sewers"
+    },
     entities = {
         [0] = dofile("./assets/scripts/entities/e_cursor.lua"),
             dofile("./assets/scripts/entities/e_revolver_reload_screen.lua"),
-            dofile("./assets/scripts/entities/e_bullet_holder.lua"
-        )
+            dofile("./assets/scripts/entities/e_shotgun_reload_screen.lua"),
+            dofile("./assets/scripts/entities/e_bullet_holder.lua"),
+            dofile("./assets/scripts/entities/e_shell_holder.lua"),
+            dofile("./assets/scripts/entities/e_ammo_pickup.lua"),
+            dofile("./assets/scripts/entities/e_health_indicator.lua")
     }
 }

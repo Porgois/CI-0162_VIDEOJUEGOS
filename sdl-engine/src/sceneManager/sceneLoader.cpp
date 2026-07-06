@@ -62,11 +62,11 @@ void SceneLoader::loadScene(const std::string &scene_path,
     sol::table keys = scene["keys"];
     loadKeys(keys, controller_manager);
 
-    sol::table entities = scene["entities"];
-    loadEntities(lua, entities, registry);
-
     sol::table maps = scene["maps"];
     loadMap(renderer, maps, registry, asset_manager, lua);
+
+    sol::table entities = scene["entities"];
+    loadEntities(lua, entities, registry);
 }
 
 void SceneLoader::loadSprites(SDL_Renderer *renderer,
@@ -710,18 +710,38 @@ void SceneLoader::loadChildOf(Entity &entity, const sol::table &components,
 
     std::string parent_name = components["child_of"]["parent"];
 
+    Entity parent_entity;
+    bool parent_found = false;
     auto named_entity = named_entities.find(parent_name);
-    if (named_entity == named_entities.end()) {
+    if (named_entity != named_entities.end()) {
+        parent_entity = named_entity->second;
+        parent_found = true;
+    } else if (Game::getInstance().registry->hasEntity(parent_name)) {
+        parent_entity = Game::getInstance().registry->findEntity(parent_name);
+        parent_found = true;
+    }
+
+    if (!parent_found) {
         std::cerr << "[CHILD OF] Could not find parent entity named '" << parent_name << "'!\n";
         return;
     }
 
+    bool has_explicit_offset = false;
+    glm::vec2 offset = glm::vec2(0.0f, 0.0f);
+    sol::optional<sol::table> offset_table = components["child_of"]["offset"];
+
+    if (offset_table != sol::nullopt) {
+        offset = glm::vec2(
+            components["child_of"]["offset"]["x"].get_or(0.0f),
+            components["child_of"]["offset"]["y"].get_or(0.0f)
+        );
+        has_explicit_offset = true;
+    }
+
     entity.addComponent<ChildOfComponent>(
-        named_entity->second,
-        glm::vec2(
-            components["child_of"]["offset"]["x"],
-            components["child_of"]["offset"]["y"]
-        )
+        parent_entity,
+        offset,
+        has_explicit_offset
     );
 }
 

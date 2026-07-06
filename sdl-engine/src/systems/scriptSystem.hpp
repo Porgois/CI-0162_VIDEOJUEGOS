@@ -58,6 +58,7 @@ public:
 
         //* Controls
         lua.set_function("is_action_active", isActionActive);
+        lua.set_function("is_action_just_pressed", isActionJustPressed);
         lua.set_function("is_button_pressed",  isButtonPressed);
         lua.set_function("is_button_just_pressed", isButtonJustPressed);
 
@@ -124,6 +125,7 @@ public:
         lua.set_function("set_velocity", setVelocity);
         lua.set_function("set_position", setPosition);
         lua.set_function("set_rotation", setRotation);
+        lua.set_function("set_child_of_offset", setChildOfOffset);
         lua.set_function("set_text", setTextText);
         lua.set_function("set_flip", [&registry](Entity entity, bool flipped) {
             auto& sprite = entity.getComponent<SpriteComponent>();
@@ -134,6 +136,7 @@ public:
         //* Getters
         lua.set_function("get_velocity", getVelocity);
         lua.set_function("get_position", getPosition);
+        lua.set_function("get_child_of_offset", getChildOfOffset);
         lua.set_function("get_pivoted_position", getPivotedPosition);
         lua.set_function("get_mouse_world_position", getMouseWorldPosition);
         lua.set_function("get_mouse_position", getMousePosition);
@@ -226,7 +229,12 @@ public:
 
         // Entity creation & deletion
         lua.set_function("spawn_entity", [&lua, &registry, &named_entities](const sol::table& entity_def) -> Entity {
-            return SceneLoader::createEntity(lua, entity_def, registry, named_entities);
+            Entity entity = SceneLoader::createEntity(lua, entity_def, registry, named_entities);
+            sol::optional<sol::table> components = entity_def["components"];
+            if (components != sol::nullopt) {
+                SceneLoader::loadChildOf(entity, components.value(), named_entities);
+            }
+            return entity;
         });
                 
         lua.set_function("delete_entity", [&registry, &named_entities](Entity entity) {

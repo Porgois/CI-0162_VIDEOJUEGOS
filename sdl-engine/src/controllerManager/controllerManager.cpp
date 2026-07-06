@@ -11,6 +11,7 @@ ControllerManager::~ControllerManager() {
 void ControllerManager::clear() {
     action_key_name.clear();
     key_down.clear();
+    key_was_down.clear();
     mouse_button_was_down.clear();
 }
 
@@ -18,6 +19,7 @@ void ControllerManager::clear() {
 void ControllerManager::addActionKey(const std::string& action_name, int key_code) {
     action_key_name.emplace(action_name, key_code);
     key_down.emplace(key_code, false);
+    key_was_down.emplace(key_code, false);
 }
 
 void ControllerManager::keyDown(int key_code) {
@@ -44,6 +46,27 @@ bool ControllerManager::isActionActive(const std::string& action) {
         return key_down[key_code];
     }
     return false;
+}
+
+bool ControllerManager::isActionJustPressed(const std::string& action) {
+    auto name_it = action_key_name.find(action);
+    if (name_it == action_key_name.end()) {
+        return false;
+    }
+
+    int key_code = name_it->second;
+
+    auto down_it = key_down.find(key_code);
+    if (down_it == key_down.end()) {
+        return false;
+    }
+
+    auto was_it = key_was_down.find(key_code);
+    if (was_it == key_was_down.end()) {
+        return false;
+    }
+
+    return down_it->second && !was_it->second;
 }
 
 //* Mouse
@@ -108,6 +131,17 @@ void ControllerManager::updateMouseButtonStates() {
     for (auto& [key, value] : mouse_button_was_down) {
         value = mouse_button_down[key]; // snapshot current -> previous
     }
+}
+
+void ControllerManager::updateKeyStates() {
+    for (auto& [key, value] : key_was_down) {
+        value = key_down[key];
+    }
+}
+
+void ControllerManager::updateInputStates() {
+    updateKeyStates();
+    updateMouseButtonStates();
 }
 
 void ControllerManager::setMousePosition(int x, int y) {

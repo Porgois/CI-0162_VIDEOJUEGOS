@@ -1,0 +1,95 @@
+{
+    "activeFile": "",
+    "expandedProjectPaths": [
+        "."
+    ],
+    "file.lastUsedOpenFilter": "All Files (*)",
+    "fileStates": {
+        "/home/Morgois/Documents/curso-videojuegos/game_assets/maps/map_01/sewers.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "sewer_tiles.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 2
+        },
+        "sewers.tsx": {
+            "scaleInDock": 2,
+            "scaleInEditor": 3
+        },
+        "sewers_01.tmx": {
+            "expandedGroupLayers": [
+                27
+            ],
+            "expandedObjectLayers": [
+                15,
+                16
+            ],
+            "scale": 4,
+            "selectedLayer": 15,
+            "viewCenter": {
+                "x": 960.125,
+                "y": 516.375
+            }
+        },
+        "sewers_02.tmx": {
+            "expandedObjectLayers": [
+                29,
+                28
+            ],
+            "scale": 5.5,
+            "selectedLayer": 17,
+            "viewCenter": {
+                "x": 560.0909090909091,
+                "y": 346.27272727272725
+            }
+        },
+        "sewers_03.tmx": {
+            "expandedObjectLayers": [
+                15
+            ],
+            "scale": 2,
+            "selectedLayer": 15,
+            "viewCenter": {
+                "x": 960.25,
+                "y": 480.25
+            }
+        },
+        "test_room.tmx": {
+            "expandedObjectLayers": [
+                4,
+                3,
+                2
+            ],
+            "scale": 2,
+            "selectedLayer": 2,
+            "viewCenter": {
+                "x": 1419.75,
+                "y": 509.25
+            }
+        }
+    },
+    "last.imagePath": "/home/Morgois/Documents/curso-videojuegos/game_assets/tiles",
+    "map.height": 75,
+    "map.lastUsedFormat": "tmx",
+    "map.tileHeight": 16,
+    "map.tileWidth": 16,
+    "map.width": 150,
+    "openFiles": [
+    ],
+    "project": "lvl_01.tiled-project",
+    "recentFiles": [
+        "/home/Morgois/Documents/curso-videojuegos/game_assets/maps/map_01/sewers.tsx",
+        "sewers.tsx",
+        "test_room.tmx",
+        "sewers_01.tmx",
+        "sewers_03.tmx",
+        "sewers_02.tmx",
+        "sewer_tiles.tsx"
+    ],
+    "tileset.lastUsedFormat": "tsx",
+    "tileset.tileSize": {
+        "height": 16,
+        "width": 16
+    }
+}
