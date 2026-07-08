@@ -70,6 +70,7 @@ function on_click()
     -- Grab
     is_held = true
     GameState.drop_state = "idle"
+    set_sprite_z_index(this, 51)
     play_audio("assets/soundEffects/weapons/shotgun/shell_grab.wav")
 end
 
@@ -98,7 +99,7 @@ function update()
     if is_held then
         if is_button_pressed("lmb") then
             local mx, my = get_mouse_position()
-            set_position(this, mx - 48, my - 48)
+            set_position(this, mx - 55, my - 70)
             play_animation(this, "grab")
         else
             is_held = false

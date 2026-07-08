@@ -1,5 +1,5 @@
 {
-    "activeFile": "",
+    "activeFile": "test_room.tmx",
     "expandedProjectPaths": [
         "."
     ],
@@ -22,26 +22,26 @@
                 27
             ],
             "expandedObjectLayers": [
-                15,
-                16
+                16,
+                15
             ],
             "scale": 4,
             "selectedLayer": 15,
             "viewCenter": {
                 "x": 960.125,
-                "y": 516.375
+                "y": 479.875
             }
         },
         "sewers_02.tmx": {
             "expandedObjectLayers": [
-                29,
-                28
+                28,
+                29
             ],
             "scale": 5.5,
             "selectedLayer": 17,
             "viewCenter": {
                 "x": 560.0909090909091,
-                "y": 346.27272727272725
+                "y": 320.0909090909091
             }
         },
         "sewers_03.tmx": {
@@ -57,15 +57,15 @@
         },
         "test_room.tmx": {
             "expandedObjectLayers": [
-                4,
+                2,
                 3,
-                2
+                4
             ],
             "scale": 2,
             "selectedLayer": 2,
             "viewCenter": {
                 "x": 1419.75,
-                "y": 509.25
+                "y": 326.25
             }
         }
     },
@@ -76,15 +76,19 @@
     "map.tileWidth": 16,
     "map.width": 150,
     "openFiles": [
+        "sewers_01.tmx",
+        "sewers_02.tmx",
+        "sewers.tsx",
+        "test_room.tmx"
     ],
     "project": "lvl_01.tiled-project",
     "recentFiles": [
-        "/home/Morgois/Documents/curso-videojuegos/game_assets/maps/map_01/sewers.tsx",
+        "sewers_01.tmx",
+        "sewers_02.tmx",
         "sewers.tsx",
         "test_room.tmx",
-        "sewers_01.tmx",
+        "/home/Morgois/Documents/curso-videojuegos/game_assets/maps/map_01/sewers.tsx",
         "sewers_03.tmx",
-        "sewers_02.tmx",
         "sewer_tiles.tsx"
     ],
     "tileset.lastUsedFormat": "tsx",

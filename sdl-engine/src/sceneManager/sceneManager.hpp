@@ -13,6 +13,7 @@ class SceneManager {
         std::map<std::string, std::string> scenes;
         std::unique_ptr<SceneLoader> scene_loader;
         std::string next_scene;
+        std::string current_scene;
         bool is_running = false;
      
     public:
@@ -23,6 +24,7 @@ class SceneManager {
         void loadScene();
 
         std::string getNextScene() const;
+        std::string getCurrentScene() const;
         void setNextScene(const std::string& next_scene);
 
         bool isRunning() const;

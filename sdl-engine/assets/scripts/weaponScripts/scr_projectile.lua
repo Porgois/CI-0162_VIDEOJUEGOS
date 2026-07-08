@@ -1,4 +1,4 @@
-local damage_to_deal = 0.25
+local damage_to_deal = 0.0
 
 function set_damage_to_deal(damage)
     damage_to_deal = damage

@@ -1,6 +1,7 @@
 -- Projectile
 local projectile_entity = dofile("./assets/scripts/entities/e_projectile.lua")
 local projectile_speed = 350.0
+local local_projectile_damage = 1.0
 local can_shoot = true
 
 -- Ammo
@@ -95,7 +96,10 @@ function shoot_projectile()
         return
     end
 
+    play_animation(this, "shoot")
     local projectile = spawn_entity(projectile_entity)
+    call_function(projectile, "set_damage_to_deal", local_projectile_damage)
+
     local x_pos, y_pos = get_pivoted_position(this)
     local angle = get_aim_angle()
 
@@ -149,6 +153,7 @@ function save_player_state()
         if GameState.player_ammo == nil then
             GameState.player_ammo = max_ammo
         end
+        GameState.player_revolver_ammo = GameState.player_ammo
         print("[REVOLVER] save_player_state: GameState.player_ammo=" .. tostring(GameState.player_ammo))
     end
 end
@@ -161,12 +166,27 @@ function load_player_state()
         else
             print("[REVOLVER] load_player_state: restored player_ammo=" .. tostring(GameState.player_ammo))
         end
+        GameState.player_revolver_ammo = GameState.player_ammo
     end
 end
 
 if GameState ~= nil then
-    GameState.save_player_state = save_player_state
-    GameState.load_player_state = load_player_state
-    GameState.save_revolver_player_state = save_player_state
-    GameState.load_revolver_player_state = load_player_state
+    local previous_save_player_state = GameState.save_player_state
+    GameState.save_player_state = function()
+        if previous_save_player_state then
+            previous_save_player_state()
+        end
+        save_player_state()
+    end
+
+    local previous_load_player_state = GameState.load_player_state
+    GameState.load_player_state = function()
+        if previous_load_player_state then
+            previous_load_player_state()
+        end
+        load_player_state()
+    end
+
+    GameState.save_revolver_player_state = GameState.save_player_state
+    GameState.load_revolver_player_state = GameState.load_player_state
 end

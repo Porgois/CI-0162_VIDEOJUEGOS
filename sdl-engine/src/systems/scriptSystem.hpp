@@ -1,5 +1,6 @@
 #ifndef SCRIPT_SYSTEM_HPP
 #define SCRIPT_SYSTEM_HPP
+#include <cstdint>
 #include <memory>
 #include <sol/sol.hpp>
 #include <vector>
@@ -11,18 +12,26 @@
 class ScriptSystem : public System {
 public:
     bool g_is_spawning = false;
-    std::unordered_map<int, sol::environment> entity_environments;
+    std::unordered_map<uint64_t, sol::environment> entity_environments;
+
+    void setSpriteIndex(Entity entity, int index) {
+        if (!entity.hasComponent<SpriteComponent>()) {
+            return;
+        }
+
+        entity.getComponent<SpriteComponent>().z_index = index;
+    }
+
+    static uint64_t getEnvironmentKey(const Entity& entity) {
+        return (static_cast<uint64_t>(entity.getId()) << 32) |
+               static_cast<uint64_t>(entity.getGeneration());
+    }
 
     ScriptSystem() {
         requireComponent<ScriptComponent>();
     }
 
     sol::optional<sol::environment> getScriptEnvironment(Entity entity) const {
-        auto it = entity_environments.find(entity.getId());
-        if (it != entity_environments.end()) {
-            return it->second;
-        }
-
         if (!entity.hasComponent<ScriptComponent>()) {
             return sol::nullopt;
         }
@@ -30,6 +39,12 @@ public:
         const auto& script = entity.getComponent<ScriptComponent>();
         if (script.env.valid()) {
             return script.env;
+        }
+
+        uint64_t key = getEnvironmentKey(entity);
+        auto it = entity_environments.find(key);
+        if (it != entity_environments.end()) {
+            return it->second;
         }
 
         if (script.update.valid()) {
@@ -68,6 +83,9 @@ public:
         lua.set_function("toggle_mouse_follow", toggleMouseFollow);
         lua.set_function("toggle_sprite_flip", toggleSpriteFlip);
         lua.set_function("toggle_flashlight", toggleFlashlight);
+        lua.set_function("set_sprite_z_index", [this](Entity entity, int index) {
+            this->setSpriteIndex(entity, index);
+        });
         lua.set_function("find_entity", findEntity);
         lua.set_function("has_entity", hasEntity);
         lua.set_function("remove_box_collider", removeBoxCollider);
@@ -120,6 +138,7 @@ public:
         ));
         
         lua.set_function("stop_music", stopMusic);
+        lua.set_function("stop_all_sounds", stopAllSounds);
 
         //* Setters
         lua.set_function("set_velocity", setVelocity);
@@ -192,7 +211,7 @@ public:
                 }
                 if (env.valid()) {
                     env["this"] = entity;
-                    entity_environments[entity.getId()] = env;
+                    entity_environments[getEnvironmentKey(entity)] = env;
                 }
             }
 
@@ -263,7 +282,7 @@ public:
                 sol::environment env = sol::get_environment(script.start);
                 if (env.valid()) {
                     env["this"] = entity;
-                    entity_environments[entity.getId()] = env;
+                    entity_environments[getEnvironmentKey(entity)] = env;
                 } else {
                     lua["this"] = entity;
                 }
@@ -283,7 +302,7 @@ public:
                 sol::environment env = sol::get_environment(script.update);
                 if (env.valid()) {
                     env["this"] = entity;
-                    entity_environments[entity.getId()] = env;
+                    entity_environments[getEnvironmentKey(entity)] = env;
                 } else {
                     lua["this"] = entity;
                 }

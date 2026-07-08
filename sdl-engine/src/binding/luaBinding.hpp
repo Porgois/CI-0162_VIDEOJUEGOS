@@ -219,9 +219,36 @@ void stopMusic() {
     Game::getInstance().audio_manager->stopMusic();
 }
 
+void stopAllSounds() {
+    Game::getInstance().audio_manager->stopAllSounds();
+}
+
 //* Scene switching
 void goToScene(const std::string& scene_name, bool fade = false, float hold_duration = -1.0f) {
     Game& game = Game::getInstance();
+
+    if (game.scene_manager) {
+        const std::string previous_scene = game.scene_manager->getCurrentScene();
+        if (!previous_scene.empty()) {
+            sol::optional<sol::table> game_state = game.lua["GameState"];
+            if (game_state) {
+                if (scene_name == "s_died" && previous_scene != "s_died") {
+                    game_state.value()["last_scene_name"] = previous_scene;
+                } else if (scene_name != "s_died" && previous_scene == "s_died") {
+                    // Keep the previously saved gameplay scene when coming back from the death screen.
+                } else {
+                    game_state.value()["last_scene_name"] = previous_scene;
+                }
+            }
+        }
+    }
+
+    if (scene_name == "s_died") {
+        game.audio_manager->stopAllSounds();
+    }
+
+    game.saveRevolverState();
+
     if (fade && hold_duration >= 0.0f) {
         game.scene_transition_hold_duration = hold_duration;
     }
@@ -271,6 +298,14 @@ void toggleSpriteFlip(Entity entity, bool value) {
     }
     auto& sprite = entity.getComponent<SpriteComponent>();
     sprite.flip_to_mouse = value;
+}
+
+void setSpriteZIndex(Entity entity, int index) {
+    if (!entity.hasComponent<SpriteComponent>()) {
+        return;
+    }
+
+    entity.getComponent<SpriteComponent>().z_index = index;
 }
 
 //* Tag

@@ -1,3 +1,5 @@
+-- PSYCHIC ---
+
 local ammo_pickup_entity = dofile("./assets/scripts/entities/e_ammo_pickup.lua")
 local health_pickup_entity = dofile("./assets/scripts/entities/e_health_pickup.lua")
 
@@ -73,7 +75,36 @@ local function calculate_move_timeout(tx, ty)
     return (dist / speed) * timeout_buffer
 end
 
+-- State machine (declared early so the helpers below can reference `state`)
+local state = "idle"
+local states = {}
+
+-- Routes state-driven animation calls through here. While the damage flash
+-- is active, state animations (idle/walk/sing/etc.) are suppressed so they
+-- don't keep interrupting/resetting "damage" back to frame 0 every tick.
+local function set_anim(name)
+    if state ~= "dead" and animation_timer > 0 then
+        return
+    end
+    play_animation(this, name)
+end
+
+-- Routes state-driven movement through here. While the damage flash is
+-- active, velocity is held at zero so the enemy visibly stops on hit,
+-- instead of the next frame's state update immediately overwriting the
+-- zero-out set inside take_damage().
+local function set_move_velocity(vx, vy)
+    if state ~= "dead" and animation_timer > 0 then
+        set_velocity(this, 0, 0)
+        return
+    end
+    set_velocity(this, vx, vy)
+end
+
 function handle_footsteps()
+    if state ~= "dead" and animation_timer > 0 then
+        return
+    end
     footstep_timer = footstep_timer - get_delta_time()
     if footstep_timer <= 0 then
         play_random_audio(footstep_sounds, 0, 3)
@@ -124,7 +155,7 @@ function pursue_player()
     end
 
     handle_footsteps()
-    set_velocity(this, (dx / dist) * speed, (dy / dist) * speed)
+    set_move_velocity((dx / dist) * speed, (dy / dist) * speed)
     flip_towards(dx)
 end
 
@@ -144,7 +175,7 @@ function flee_from_player()
     end
 
     handle_footsteps()
-    set_velocity(this, (dx / dist) * speed, (dy / dist) * speed)
+    set_move_velocity((dx / dist) * speed, (dy / dist) * speed)
     flip_towards(-dx)
 end
 
@@ -164,9 +195,6 @@ end
 -- States
 -- ============================================================
 
-local state = "idle"
-local states = {}
-
 function transition_to(new_state)
     if states[new_state] then
         state = new_state
@@ -179,7 +207,7 @@ states["idle"] = {
         set_velocity(this, 0, 0)
     end,
     update = function()
-        play_animation(this, "idle")
+        set_anim("idle")
         if can_detect_player() then
             transition_to("pursue")
         else
@@ -204,7 +232,7 @@ states["patrol"] = {
 
         if patrol_wait > 0 then
             patrol_wait = patrol_wait - get_delta_time()
-            play_animation(this, "idle")
+            set_anim("idle")
             return
         end
 
@@ -229,9 +257,9 @@ states["patrol"] = {
         end
 
         handle_footsteps()
-        set_velocity(this, (dx / dist) * speed, (dy / dist) * speed)
+        set_move_velocity((dx / dist) * speed, (dy / dist) * speed)
         flip_towards(dx)
-        play_animation(this, "walk")
+        set_anim("walk")
     end,
 }
 
@@ -251,7 +279,7 @@ states["pursue"] = {
             transition_to("patrol")
         else
             flee_from_player()
-            play_animation(this, "walk")
+            set_anim("walk")
         end
     end
 }
@@ -294,7 +322,7 @@ states["psychic"] = {
 
         if psychic_intro_timer > 0 then
             psychic_intro_timer = psychic_intro_timer - get_delta_time()
-            play_animation(this, "idle")
+            set_anim("idle")
             return
         end
 
@@ -307,7 +335,7 @@ states["psychic"] = {
 
         if sing_timer > 0 then
             sing_timer = sing_timer - get_delta_time()
-            play_animation(this, "sing")
+            set_anim("sing")
             return
         end
 
@@ -353,9 +381,9 @@ states["post_psychic"] = {
                 return
             end
             handle_footsteps()
-            set_velocity(this, (dx / dist) * speed, (dy / dist) * speed)
+            set_move_velocity((dx / dist) * speed, (dy / dist) * speed)
             flip_towards(dx)
-            play_animation(this, "walk")
+            set_anim("walk")
             return
         end
 
@@ -363,7 +391,7 @@ states["post_psychic"] = {
 
         if post_psychic_wait_timer > 0 then
             post_psychic_wait_timer = post_psychic_wait_timer - get_delta_time()
-            play_animation(this, "idle")
+            set_anim("idle")
             return
         end
 
@@ -373,9 +401,10 @@ states["post_psychic"] = {
 
 states["dead"] = {
     enter = function()
+        set_sprite_z_index(this, 8)
         set_velocity(this, 0, 0)
         play_animation(this, "death")
-        play_audio("assets/soundEffects/enemies/damaged/death.wav", 0)
+        play_audio("assets/soundEffects/enemies/damaged/psychic_death.wav", 0)
 
         if not on_death_triggered then
             on_death_triggered = true
@@ -396,24 +425,26 @@ states["dead"] = {
 
 function take_damage(amount)
     if state == "dead" then return end
+
     set_velocity(this, 0, 0)
     current_health = current_health - amount
     play_audio("assets/soundEffects/misc/hits/hit_flesh.wav", 0, 30)
     has_been_hit = true
+
     if current_health <= 0 then
         transition_to("dead")
     else
-        play_audio("assets/soundEffects/enemies/damaged/hit.wav", 0, 110)
+        play_audio("assets/soundEffects/enemies/damaged/psychic_pain.wav", 0, 110)
         animation_timer = damage_anim_duration
+        play_animation(this, "damage")
     end
 end
 
 function update()
-    if animation_timer > 0 then
+    if state ~= "dead" and animation_timer > 0 then
         animation_timer = animation_timer - get_delta_time()
-        play_animation(this, "damage")
-        return
     end
+
     states[state].update()
 end
 

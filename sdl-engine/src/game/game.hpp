@@ -50,14 +50,13 @@ class Game {
         void processInput();
         void updateTransition();
         void renderTransition();
-        
-        void loadRevolverState();
-        void saveRevolverState();
   
         Game();
         ~Game();
 
     public:
+        void loadRevolverState();
+        void saveRevolverState();
         int window_width = 800;
         int window_height = 600;
         int map_width = 0;

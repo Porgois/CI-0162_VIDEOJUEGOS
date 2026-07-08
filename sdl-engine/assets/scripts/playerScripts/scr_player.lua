@@ -20,12 +20,12 @@ local shotgun_weapon_back = dofile("./assets/scripts/entities/e_shotgun_back.lua
 
 local back_weapon_data = {
     revolver = {
-        normal = {offset = {x = 200.0, y = 4.0}, rotation = 90},
-        flipped = {offset = {x = -180.0, y = 4.0}, rotation = 90}
+        normal = {offset = {x = -5.0, y = 7.0}, rotation = 90},
+        flipped = {offset = {x = 5.0, y = 7.0}, rotation = -90}
     },
     shotgun = {
-        normal = {offset = {x = -6.0, y = 0.0}, rotation = 100},
-        flipped = {offset = {x = 7.0, y = 0.0}, rotation = -100}
+        normal = {offset = {x = -6.0, y = 4.0}, rotation = 100},
+        flipped = {offset = {x = 7.0, y = 4.0}, rotation = -100}
     }
 }
 
@@ -126,14 +126,26 @@ states["dead"] = {
 }
 
 function die()
+    if not not_dead then
+        return
+    end
+
+    if GameState then
+        GameState.player_health = current_health
+        GameState.current_weapon_name = current_weapon_name or ""
+        GameState.current_back_weapon_name = current_back_weapon_name or ""
+        GameState.current_weapon_slot = current_weapon_slot
+    end
+
     not_dead = false
     set_focus(false)
     if current_weapon then
         delete_entity(current_weapon)
         current_weapon = nil
-        current_weapon_name = nil
     end
+    set_current_weapon_state_name("")
     delete_back_weapon()
+    go_to_scene("s_died")
 end
 
 function transition_to(new_state)
@@ -186,12 +198,78 @@ local function get_weapon_file_path(weapon_name)
 end
 
 local function get_allowed_weapon_list()
-    -- Sol2 wraps C++ vectors, so type() may not return "table"
-    -- Just check if it exists and can be indexed
     if GameState and GameState.weapons then
         return GameState.weapons
     end
     return {}
+end
+
+local function get_current_weapon_state_name()
+    if GameState and GameState.current_weapon_name and GameState.current_weapon_name ~= "" then
+        return GameState.current_weapon_name
+    end
+    return current_weapon_name or ""
+end
+
+local function get_current_back_weapon_state_name()
+    if GameState and GameState.current_back_weapon_name and GameState.current_back_weapon_name ~= "" then
+        return GameState.current_back_weapon_name
+    end
+    return current_back_weapon_name or ""
+end
+
+function set_current_back_weapon_state_name(weapon_name)
+    current_back_weapon_name = weapon_name or ""
+    if GameState then
+        GameState.current_back_weapon_name = current_back_weapon_name
+    end
+end
+
+local function get_weapon_name_by_slot(slot)
+    local weapon_list = GameState and GameState.weapons or weapons
+    if type(slot) ~= "number" or slot < 1 or slot > #weapon_list then
+        return nil
+    end
+    return weapon_list[slot]
+end
+
+function set_current_weapon_state_name(weapon_name)
+    current_weapon_name = weapon_name or ""
+    if GameState then
+        GameState.current_weapon_name = current_weapon_name
+    end
+end
+
+local function serialize_weapon_list(list)
+    if type(list) ~= "table" then
+        return "{}"
+    end
+
+    local parts = {}
+    for i = 1, #list do
+        parts[#parts + 1] = tostring(list[i])
+    end
+
+    return "{" .. table.concat(parts, ",") .. "}"
+end
+
+local function normalize_weapon_list(list)
+    local normalized = {}
+    local seen = {}
+
+    if type(list) ~= "table" then
+        return normalized
+    end
+
+    for i = 1, #list do
+        local weapon_name = list[i]
+        if weapon_name and weapon_name ~= "" and not seen[weapon_name] and (weapon_name == "revolver" or weapon_name == "shotgun") then
+            normalized[#normalized + 1] = weapon_name
+            seen[weapon_name] = true
+        end
+    end
+
+    return normalized
 end
 
 local function is_weapon_allowed(weapon_name)
@@ -209,6 +287,130 @@ local function is_weapon_allowed(weapon_name)
     return false
 end
 
+local function sync_weapon_inventory_state()
+    local normalized_weapons = normalize_weapon_list(GameState and GameState.weapons or weapons)
+
+    if GameState then
+        GameState.weapons = normalized_weapons
+    end
+    weapons = normalized_weapons
+
+    local preferred_weapon_name = nil
+    local current_slot = nil
+
+    if GameState and type(GameState.current_weapon_slot) == "number" and GameState.current_weapon_slot >= 1 and GameState.current_weapon_slot <= #normalized_weapons then
+        current_slot = GameState.current_weapon_slot
+    elseif #normalized_weapons > 0 then
+        current_slot = 1
+    end
+
+    if current_slot then
+        preferred_weapon_name = get_weapon_name_by_slot(current_slot)
+    end
+
+    if GameState and GameState.current_weapon_name and GameState.current_weapon_name ~= "" and is_weapon_allowed(GameState.current_weapon_name) then
+        preferred_weapon_name = GameState.current_weapon_name
+    elseif preferred_weapon_name == nil and #normalized_weapons > 0 then
+        preferred_weapon_name = normalized_weapons[1]
+    end
+
+    if GameState then
+        if preferred_weapon_name and is_weapon_allowed(preferred_weapon_name) then
+            GameState.current_weapon_name = preferred_weapon_name
+        else
+            GameState.current_weapon_name = ""
+        end
+    end
+
+    current_weapon_name = preferred_weapon_name or ""
+
+    if GameState and type(GameState.current_weapon_slot) == "number" and GameState.current_weapon_slot >= 1 and GameState.current_weapon_slot <= #normalized_weapons then
+        current_weapon_slot = GameState.current_weapon_slot
+    elseif #normalized_weapons > 0 then
+        current_weapon_slot = 1
+    else
+        current_weapon_slot = 0
+    end
+
+    if GameState then
+        GameState.current_weapon_slot = current_weapon_slot
+    end
+end
+
+local function save_weapon_inventory_state()
+    sync_weapon_inventory_state()
+    print("[PLAYER] save_weapon_inventory_state: weapons=" .. serialize_weapon_list(GameState and GameState.weapons or weapons) .. ", current=" .. tostring(current_weapon_name) .. ", slot=" .. tostring(current_weapon_slot))
+end
+
+local function load_weapon_inventory_state()
+    if not GameState then
+        return
+    end
+
+    local saved_weapons = normalize_weapon_list(GameState.weapons)
+    if #saved_weapons > 0 then
+        weapons = saved_weapons
+        GameState.weapons = saved_weapons
+    else
+        weapons = {}
+        GameState.weapons = {}
+    end
+
+    local restored_weapon_name = nil
+    local restored_slot = GameState.current_weapon_slot
+
+    if type(restored_slot) ~= "number" or restored_slot < 1 or restored_slot > #saved_weapons then
+        restored_slot = (#saved_weapons > 0) and 1 or 0
+    end
+
+    if GameState.current_weapon_name and GameState.current_weapon_name ~= "" and is_weapon_allowed(GameState.current_weapon_name) then
+        restored_weapon_name = GameState.current_weapon_name
+    elseif restored_slot > 0 then
+        restored_weapon_name = saved_weapons[restored_slot]
+    elseif #saved_weapons > 0 then
+        restored_weapon_name = saved_weapons[1]
+    end
+
+    if restored_weapon_name and is_weapon_allowed(restored_weapon_name) then
+        GameState.current_weapon_name = restored_weapon_name
+    else
+        GameState.current_weapon_name = ""
+        restored_weapon_name = ""
+    end
+
+    GameState.current_weapon_slot = restored_slot
+    current_weapon_name = restored_weapon_name or ""
+    current_weapon_slot = restored_slot
+    print("[PLAYER] load_weapon_inventory_state: weapons=" .. serialize_weapon_list(GameState.weapons) .. ", current=" .. tostring(current_weapon_name) .. ", slot=" .. tostring(current_weapon_slot))
+end
+
+local function add_weapon_to_inventory(weapon_name)
+    if not weapon_name or weapon_name == "" then
+        return false
+    end
+
+    if is_weapon_allowed(weapon_name) then
+        return false
+    end
+
+    local existing_weapons = get_allowed_weapon_list()
+    local allowed_weapons = {}
+
+    for i = 1, #existing_weapons do
+        allowed_weapons[i] = existing_weapons[i]
+    end
+
+    allowed_weapons[#allowed_weapons + 1] = weapon_name
+    allowed_weapons = normalize_weapon_list(allowed_weapons)
+    weapons = allowed_weapons
+
+    if GameState then
+        GameState.weapons = allowed_weapons
+    end
+
+    return true
+end
+
 local function deep_copy_table(orig)
     if type(orig) ~= "table" then
         return orig
@@ -220,12 +422,12 @@ local function deep_copy_table(orig)
     return copy
 end
 
-local function delete_back_weapon()
+function delete_back_weapon()
     if current_back_weapon then
         delete_entity(current_back_weapon)
         current_back_weapon = nil
-        current_back_weapon_name = nil
     end
+    set_current_back_weapon_state_name("")
 end
 
 local function spawn_back_weapon(weapon_name)
@@ -276,7 +478,7 @@ local function spawn_back_weapon(weapon_name)
     end
 
     current_back_weapon = spawn_entity(spawn_definition)
-    current_back_weapon_name = weapon_name
+    set_current_back_weapon_state_name(weapon_name)
     current_back_weapon_flip = player_flipped
 end
 
@@ -291,7 +493,7 @@ local function refresh_back_weapon_flip()
 end
 
 local function load_weapon_list()
-    weapons = get_allowed_weapon_list()
+    sync_weapon_inventory_state()
 
     if GameState and GameState.current_weapon_slot and type(GameState.current_weapon_slot) == "number" then
         current_weapon_slot = GameState.current_weapon_slot
@@ -318,10 +520,10 @@ local function set_current_weapon(weapon_name)
     if current_weapon then
         delete_entity(current_weapon)
         current_weapon = nil
-        current_weapon_name = nil
     end
 
     if not weapon_name or weapon_name == "" then
+        set_current_weapon_state_name("")
         return
     end
 
@@ -332,14 +534,45 @@ local function set_current_weapon(weapon_name)
     end
 
     current_weapon = spawn_entity(weapon_entity)
-    current_weapon_name = weapon_name
-    if GameState then
-        GameState.current_weapon_name = weapon_name
-    end
+    set_current_weapon_state_name(weapon_name)
 
     if not_dead then
         toggle_mouse_follow(current_weapon, true)
     end
+end
+
+local function switch_to_weapon(weapon_name, should_play_sound)
+    if not weapon_name or weapon_name == "" or not is_weapon_allowed(weapon_name) then
+        return false
+    end
+
+    local active_name = get_current_weapon_state_name()
+    if should_play_sound then
+        if weapon_name == "revolver" then
+            play_audio("assets/soundEffects/weapons/swap_revolver.wav", 0, 10)
+        elseif weapon_name == "shotgun" then
+            play_audio("assets/soundEffects/weapons/swap_shotgun.wav", 0, 10)
+        end
+    end
+
+    local weapon_list = GameState and GameState.weapons or weapons
+    local weapon_index = 1
+    for i = 1, #weapon_list do
+        if weapon_list[i] == weapon_name then
+            weapon_index = i
+            break
+        end
+    end
+
+    current_weapon_slot = weapon_index
+    if GameState then
+        GameState.current_weapon_slot = current_weapon_slot
+    end
+
+    spawn_back_weapon(active_name)
+    set_current_weapon(weapon_name)
+    save_weapon_inventory_state()
+    return true
 end
 
 local function switch_weapon()
@@ -350,47 +583,32 @@ local function switch_weapon()
     local weapon_list = GameState.weapons
     local list_size = #weapon_list
 
-    if list_size < 2 then
+    if list_size < 1 then
         return
     end
 
-    -- Find current weapon index in the list
+    local active_name = get_current_weapon_state_name()
     local active_index = 1
-    if current_weapon_name then
+    if active_name and active_name ~= "" then
         for i = 1, list_size do
-            if weapon_list[i] == current_weapon_name then
+            if weapon_list[i] == active_name then
                 active_index = i
                 break
             end
         end
     end
 
-    -- Calculate next weapon index
     local next_index = active_index + 1
     if next_index > list_size then
         next_index = 1
     end
 
     local next_weapon_name = weapon_list[next_index]
-
-    -- Only switch if it's different and allowed
-    if next_weapon_name == current_weapon_name then
+    if next_weapon_name == active_name then
         return
     end
 
-    if not is_weapon_allowed(next_weapon_name) then
-        return
-    end
-
-    -- Update slot
-    current_weapon_slot = next_index
-    if GameState then
-        GameState.current_weapon_slot = current_weapon_slot
-    end
-
-    local previous_weapon_name = current_weapon_name
-    spawn_back_weapon(previous_weapon_name)
-    set_current_weapon(next_weapon_name)
+    switch_to_weapon(next_weapon_name, true)
 end
 
 -- Function for external scripts (like enemies) to disable/enable flashlight
@@ -417,6 +635,155 @@ function take_damage(damage_amount)
     transition_to("damage")
 end
 
+function clone_table(source)
+    local copy = {}
+    if type(source) == "table" then
+        for i = 1, #source do
+            copy[i] = source[i]
+        end
+    end
+    return copy
+end
+
+function get_scene_state_key()
+    if GameState and GameState.current_scene_name and GameState.current_scene_name ~= "" then
+        return GameState.current_scene_name
+    end
+
+    return "default"
+end
+
+function make_empty_state_list(count, default_value)
+    local values = {}
+    for i = 1, count do
+        values[i] = default_value
+    end
+    return values
+end
+
+function snapshot_scene_state()
+    if not GameState then
+        return
+    end
+
+    local scene_key = get_scene_state_key()
+    if GameState.scene_state_snapshots == nil then
+        GameState.scene_state_snapshots = {}
+    end
+
+    if GameState.scene_state_snapshots[scene_key] == nil then
+        GameState.scene_state_snapshots[scene_key] = {}
+    end
+
+    local snapshot = GameState.scene_state_snapshots[scene_key]
+    snapshot.player_health = current_health
+    snapshot.player_max_health = max_health
+    snapshot.player_revolver_ammo = GameState.player_revolver_ammo or GameState.player_ammo or 0
+    snapshot.player_ammo = snapshot.player_revolver_ammo
+    snapshot.player_shotgun_ammo = GameState.player_shotgun_ammo or 0
+    snapshot.player_max_revolver_ammo = GameState.player_max_revolver_ammo or GameState.player_max_ammo or 12
+    snapshot.player_max_shotgun_ammo = GameState.player_max_shotgun_ammo or 6
+    if type(GameState.revolver_cylinder) == "table" and #GameState.revolver_cylinder > 0 then
+        snapshot.revolver_cylinder = clone_table(GameState.revolver_cylinder)
+    else
+        snapshot.revolver_cylinder = make_empty_state_list(6, "empty")
+    end
+    if type(GameState.shotgun_barrel) == "table" and #GameState.shotgun_barrel > 0 then
+        snapshot.shotgun_barrel = clone_table(GameState.shotgun_barrel)
+    else
+        snapshot.shotgun_barrel = make_empty_state_list(2, "empty")
+    end
+    snapshot.current_weapon_name = current_weapon_name or GameState.current_weapon_name or ""
+    snapshot.current_back_weapon_name = current_back_weapon_name or GameState.current_back_weapon_name or ""
+    snapshot.current_weapon_slot = current_weapon_slot or GameState.current_weapon_slot or 0
+end
+
+function restore_scene_start_state()
+    if not GameState then
+        return
+    end
+
+    local scene_key = get_scene_state_key()
+    if GameState.scene_state_snapshots == nil then
+        GameState.scene_state_snapshots = {}
+    end
+
+    local snapshot = GameState.scene_state_snapshots[scene_key]
+    if snapshot == nil then
+        snapshot_scene_state()
+        return
+    end
+
+    current_health = tonumber(snapshot.player_health) or current_health
+    max_health = tonumber(snapshot.player_max_health) or max_health
+
+    GameState.player_health = current_health
+    GameState.player_max_health = max_health
+    GameState.player_revolver_ammo = tonumber(snapshot.player_revolver_ammo) or tonumber(snapshot.player_ammo) or GameState.player_revolver_ammo or 0
+    GameState.player_ammo = GameState.player_revolver_ammo
+    GameState.player_shotgun_ammo = tonumber(snapshot.player_shotgun_ammo) or GameState.player_shotgun_ammo or 0
+    GameState.player_max_revolver_ammo = tonumber(snapshot.player_max_revolver_ammo) or GameState.player_max_revolver_ammo or 12
+    GameState.player_max_shotgun_ammo = tonumber(snapshot.player_max_shotgun_ammo) or GameState.player_max_shotgun_ammo or 6
+
+    if snapshot.revolver_cylinder ~= nil then
+        GameState.revolver_cylinder = clone_table(snapshot.revolver_cylinder)
+        if #GameState.revolver_cylinder < 6 then
+            local values = make_empty_state_list(6, "empty")
+            for i = 1, math.min(#GameState.revolver_cylinder, 6) do
+                values[i] = GameState.revolver_cylinder[i]
+            end
+            GameState.revolver_cylinder = values
+        end
+    end
+
+    if snapshot.shotgun_barrel ~= nil then
+        GameState.shotgun_barrel = clone_table(snapshot.shotgun_barrel)
+        if #GameState.shotgun_barrel < 2 then
+            local values = make_empty_state_list(2, "empty")
+            for i = 1, math.min(#GameState.shotgun_barrel, 2) do
+                values[i] = GameState.shotgun_barrel[i]
+            end
+            GameState.shotgun_barrel = values
+        end
+    end
+
+    if snapshot.current_weapon_name ~= nil then
+        GameState.current_weapon_name = snapshot.current_weapon_name
+    end
+
+    if snapshot.current_back_weapon_name ~= nil then
+        GameState.current_back_weapon_name = snapshot.current_back_weapon_name
+    end
+
+    if snapshot.current_weapon_slot ~= nil then
+        GameState.current_weapon_slot = snapshot.current_weapon_slot
+    end
+end
+
+function save_player_state()
+    if GameState then
+        GameState.player_health = current_health
+        GameState.player_max_health = max_health
+    end
+end
+
+function load_player_state()
+    if not GameState then
+        return
+    end
+
+    if GameState.player_health ~= nil then
+        current_health = tonumber(GameState.player_health) or current_health
+    end
+
+    if GameState.player_max_health ~= nil then
+        max_health = tonumber(GameState.player_max_health) or max_health
+    end
+
+    GameState.player_health = current_health
+    GameState.player_max_health = max_health
+end
+
 function add_weapon_ammo(other, n)
     play_audio("assets/soundEffects/misc/pickups/ammo_pickup.wav", 0, 30)
 
@@ -432,15 +799,18 @@ function add_weapon_ammo(other, n)
 end
 
 function on_collision(other)
-    if get_tag(other) == "t_ammo_pickup" or get_tag(other) == "t_shell_pickup" then -- AMMO
+    local tag = get_tag(other)
+
+    if tag == "t_ammo_pickup" or tag == "t_shell_pickup" then -- AMMO
         if GameState then
             local ammo_amount = get_script_variable(other, "default_revolver_ammo") or 2
             add_weapon_ammo(other, ammo_amount)
         end
+
         delete_entity(other)
     end
 
-    if get_tag(other) == "t_health_pickup" then -- HEALTH
+    if tag == "t_health_pickup" then -- HEALTH
         if current_health < max_health then
             current_health = current_health + 1
             if GameState then GameState.player_health = current_health end
@@ -450,6 +820,21 @@ function on_collision(other)
             play_audio("assets/soundEffects/misc/pickups/health_pickup.wav", 0, 15)
             call_function(other, "spawn_text", "health full!")
         end
+
+        delete_entity(other)
+    end
+
+    if tag == "t_revolver_pickup" or tag == "t_shotgun_pickup" then -- WEAPONS
+        local picked_weapon = tag == "t_revolver_pickup" and "revolver" or "shotgun"
+        add_weapon_to_inventory(picked_weapon)
+        switch_to_weapon(picked_weapon, true)
+
+        if picked_weapon == "revolver" then
+            call_function(other, "spawn_text", "Grabbed Revolver!")
+        else
+            call_function(other, "spawn_text", "Grabbed Shotgun!")
+        end
+
         delete_entity(other)
     end
 end
@@ -488,6 +873,8 @@ function update()
 end
 
 function start()
+    restore_scene_start_state()
+
     if GameState and GameState.player_health ~= nil then
         current_health = GameState.player_health
     elseif GameState then
@@ -502,23 +889,30 @@ function start()
 
     play_music("assets/soundEffects/environment/2.wav", -1, 4)
 
+    load_weapon_inventory_state()
     load_weapon_list()
 
     -- Determine desired starting weapon
     local desired_weapon = nil
-    if GameState and GameState.current_weapon_name and GameState.current_weapon_name ~= "" then
+    if GameState and GameState.current_weapon_name and GameState.current_weapon_name ~= "" and is_weapon_allowed(GameState.current_weapon_name) then
         desired_weapon = GameState.current_weapon_name
+    elseif GameState and GameState.current_weapon_slot and type(GameState.current_weapon_slot) == "number" and GameState.current_weapon_slot >= 1 then
+        desired_weapon = get_weapon_name_by_slot(GameState.current_weapon_slot)
     elseif GameState and GameState.weapons and type(GameState.weapons) == "table" and #GameState.weapons >= 1 then
         desired_weapon = GameState.weapons[1]
     elseif #weapons >= 1 then
         desired_weapon = weapons[1]
     end
 
-    -- Spawn the desired weapon using consistent path
-    if desired_weapon and desired_weapon ~= "" and is_weapon_allowed(desired_weapon) then
+    if desired_weapon == nil or desired_weapon == "" then
+        current_weapon = nil
+        current_weapon_name = nil
+        if GameState then
+            GameState.current_weapon_name = ""
+        end
+    elseif is_weapon_allowed(desired_weapon) then
         set_current_weapon(desired_weapon)
 
-        -- Synchronize current_weapon_slot with the spawned weapon
         if GameState and GameState.weapons then
             for i = 1, #GameState.weapons do
                 if GameState.weapons[i] == current_weapon_name then
@@ -528,11 +922,32 @@ function start()
                 end
             end
         end
+    elseif GameState and GameState.weapons and type(GameState.weapons) == "table" and #GameState.weapons >= 1 then
+        set_current_weapon(GameState.weapons[1])
+    elseif #weapons >= 1 then
+        set_current_weapon(weapons[1])
     end
 
     if current_weapon and not_dead then
         toggle_mouse_follow(current_weapon, true)
     end
 
+    if current_weapon and current_weapon_name and current_weapon_name ~= "" then
+        local desired_back_weapon = get_current_back_weapon_state_name()
+        if desired_back_weapon and desired_back_weapon ~= "" and is_weapon_allowed(desired_back_weapon) then
+            spawn_back_weapon(desired_back_weapon)
+        end
+    end
+
+    save_weapon_inventory_state()
     transition_to("idle")
+end
+
+if GameState then
+    GameState.save_player_inventory_state = save_weapon_inventory_state
+    GameState.load_player_inventory_state = load_weapon_inventory_state
+    GameState.save_player_state = save_player_state
+    GameState.load_player_state = load_player_state
+    GameState.restore_scene_start_state = restore_scene_start_state
+    GameState.snapshot_scene_state = snapshot_scene_state
 end

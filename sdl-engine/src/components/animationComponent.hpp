@@ -2,6 +2,7 @@
 #define ANIMATION_COMPONENT_HPP
 
 #include <SDL2/SDL.h>
+#include <unordered_map>
 
 struct AnimationClip {
     int row;
@@ -21,6 +22,18 @@ struct AnimationComponent {
             current_animation = animation_name;
             current_frame = 0;
             start_time = SDL_GetTicks();
+            return;
+        }
+
+        auto it = clips.find(current_animation);
+        if (it != clips.end() && !it->second.loop) {
+            const AnimationClip& clip = it->second;
+            Uint32 elapsed = SDL_GetTicks() - start_time;
+            Uint32 duration = (clip.frame_count * 1000) / clip.speed;
+            if (elapsed >= duration) {
+                current_frame = 0;
+                start_time = SDL_GetTicks();
+            }
         }
     }
 

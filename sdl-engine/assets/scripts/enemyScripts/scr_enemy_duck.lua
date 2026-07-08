@@ -1,10 +1,12 @@
+-- BITER ---
+
 -- Possible entity spawns
 local ammo_pickup_entity = dofile("./assets/scripts/entities/e_ammo_pickup.lua")
 local health_pickup_entity = dofile("./assets/scripts/entities/e_health_pickup.lua")
 
 -- General values
 local speed = 35
-local current_health = 3
+local current_health = 3.0
 local is_dead = false
 local attack_damage = 1
 local attack_range = 20
@@ -27,6 +29,8 @@ local origin_x, origin_y = 0, 0
 local patrol_target_x, patrol_target_y = 0, 0
 local patrol_wait = 0
 local patrol_wait_duration = 2.0
+local patrol_move_timeout = 0
+local timeout_buffer = 1.5
 
 -- Drop chance
 local drop_chance = 1.0         -- 75% chance to drop anything
@@ -47,6 +51,17 @@ local footstep_sounds = {
 
 local function flip_towards(dx)
     set_flip(this, dx < 0)
+end
+
+-- Computes how long we should allow ourselves to walk toward (tx, ty)
+-- before giving up and picking a new target. Used to keep patrol from
+-- getting stuck oscillating against a wall/corner forever.
+local function calculate_move_timeout(tx, ty)
+    local my_x, my_y = get_position(this)
+    local dx = tx - my_x
+    local dy = ty - my_y
+    local dist = math.sqrt(dx * dx + dy * dy)
+    return (dist / speed) * timeout_buffer
 end
 
 -- State machine
@@ -94,6 +109,7 @@ states["patrol"] = {
         set_velocity(this, 0, 0)
         patrol_wait = patrol_wait_duration
         pick_patrol_target()
+        patrol_move_timeout = calculate_move_timeout(patrol_target_x, patrol_target_y)
     end,
     update = function()
         if can_detect_player() then
@@ -113,6 +129,15 @@ states["patrol"] = {
             set_velocity(this, 0, 0)
             patrol_wait = patrol_wait_duration
             pick_patrol_target()
+            patrol_move_timeout = calculate_move_timeout(patrol_target_x, patrol_target_y)
+            return
+        end
+        -- Give up on this target if we haven't reached it within the
+        -- expected travel time and pick a new one instead of stalling.
+        patrol_move_timeout = patrol_move_timeout - get_delta_time()
+        if patrol_move_timeout <= 0 then
+            pick_patrol_target()
+            patrol_move_timeout = calculate_move_timeout(patrol_target_x, patrol_target_y)
             return
         end
         handle_footsteps()
@@ -178,6 +203,7 @@ states["attack"] = {
 
 states["dead"] = {
     enter = function()
+        set_sprite_z_index(this, 8)
         set_velocity(this, 0, 0)
         play_animation(this, "death")
         play_audio("assets/soundEffects/enemies/damaged/death.wav", 0)
@@ -275,11 +301,16 @@ function pursue_player()
 end
 
 function take_damage(amount)
-    if state == "dead" then return end
+    if state == "dead" then 
+        return 
+    end
+
     set_velocity(this, 0, 0)
     current_health = current_health - amount
+    print("[ENEMY DUCK] Damage taken:" .. amount)
     play_audio("assets/soundEffects/misc/hits/hit_flesh.wav", 0, 30)
     has_been_hit = true
+
     if current_health <= 0 then
         transition_to("dead")
     else

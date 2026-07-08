@@ -78,8 +78,17 @@ function start()
         GameState.player_shotgun_ammo = default_ammo
     end
 
-    if GameState.shotgun_barrel == nil then
+    if GameState.shotgun_barrel == nil or type(GameState.shotgun_barrel) ~= "table" then
         GameState.shotgun_barrel = {"empty", "empty"}
+    else
+        if #GameState.shotgun_barrel == 0 then
+            GameState.shotgun_barrel = {"empty", "empty"}
+        end
+        for i = 1, ZONE_SLOTS do
+            if GameState.shotgun_barrel[i] == nil then
+                GameState.shotgun_barrel[i] = "empty"
+            end
+        end
     end
 
     print("SHOTGUN AMMO: " .. GameState.player_shotgun_ammo)
@@ -166,10 +175,18 @@ function set_reload_menu(open)
             end
         end
         show_reload_entities()
+        if GameState.shotgun_zones and #GameState.shotgun_zones > 0 then
+            restore_shotgun_state()
+            GameState.pending_shotgun_restore = false
+            pending_shotgun_restore = false
+        end
         print("[RELOAD] menu opened")
     else
         if not GameState.shotgun_reload_menu_open then
             return
+        end
+        if GameState and GameState.save_shotgun_state then
+            GameState.save_shotgun_state()
         end
         GameState.shotgun_reload_menu_open = false
         GameState.reload_menu_open = GameState.revolver_reload_menu_open or false
@@ -321,12 +338,34 @@ function find_slot_index(zone, slot)
     return nil
 end
 
+function set_shotgun_slot_state(slot_index, state_name, slot)
+    if GameState == nil then
+        return
+    end
+
+    if GameState.shotgun_barrel == nil then
+        GameState.shotgun_barrel = {}
+    end
+
+    local normalized_state = state_name or "empty"
+    if slot then
+        slot.occupied = (normalized_state == "loaded" or normalized_state == "spent")
+        slot.spent = (normalized_state == "spent")
+        if not slot.occupied then
+            slot.bullet = nil
+        end
+    end
+
+    if slot_index then
+        GameState.shotgun_barrel[slot_index] = normalized_state
+    end
+end
+
 function unslot_bullet(bullet)
     local slot, zone = find_slot_for_bullet(bullet)
     if slot then
-        slot.occupied = false
-        slot.spent = false
-        slot.bullet = nil
+        local slot_index = find_slot_index(zone, slot)
+        set_shotgun_slot_state(slot_index, "empty", slot)
         if GameState.shotgun_slotted_bullets then
             GameState.shotgun_slotted_bullets[bullet] = nil
         end
@@ -439,17 +478,19 @@ function update()
         best_slot.spent = false
         best_slot.bullet = dropped
         accepted = true
+  
         play_animation(best_slot.bullet, "full")
+        set_sprite_z_index(best_slot.bullet, 49)
         play_audio("assets/soundEffects/weapons/shotgun/shell_insert.wav")
-
+        
         if GameState.shotgun_slotted_bullets == nil then
             GameState.shotgun_slotted_bullets = {}
         end
         GameState.shotgun_slotted_bullets[dropped] = true
 
         local slot_index = find_slot_index(best_zone, best_slot)
-        if slot_index and GameState.shotgun_barrel then
-            GameState.shotgun_barrel[slot_index] = "loaded"
+        if slot_index then
+            set_shotgun_slot_state(slot_index, "loaded", best_slot)
         end
 
         if GameState then
@@ -491,9 +532,7 @@ function mark_slot_spent(zone_index, slot_index)
     end
 
     slot.spent = true
-    if GameState.shotgun_barrel then
-        GameState.shotgun_barrel[slot_index] = "spent"
-    end
+    set_shotgun_slot_state(slot_index, "spent", slot)
     play_animation(slot.bullet, "empty")
     print("[RELOAD] slot " .. slot_index .. " in zone " .. zone_index .. " marked spent")
 end
@@ -556,18 +595,28 @@ function restore_shotgun_state()
         return
     end
 
-    if GameState.shotgun_slotted_bullets == nil then
-        GameState.shotgun_slotted_bullets = {}
-    end
+    GameState.shotgun_slotted_bullets = {}
 
     print("[RELOAD] restoring shotgun barrel state from saved GameState")
 
+    for i = 1, #zone.slots do
+        local slot = zone.slots[i]
+        if slot and (GameState.shotgun_barrel[i] ~= "loaded" and GameState.shotgun_barrel[i] ~= "spent") then
+            slot.occupied = false
+            slot.spent = false
+            slot.bullet = nil
+        end
+    end
+
     for i = 1, #GameState.shotgun_barrel do
         local state = GameState.shotgun_barrel[i]
+        local slot = zone.slots[i]
         if state == "loaded" or state == "spent" then
-            local slot = zone.slots[i]
-            if slot and not slot.occupied then
-                local bullet = spawn_entity(bullet_entity)
+            if slot then
+                local bullet = slot.bullet
+                if bullet == nil then
+                    bullet = spawn_entity(bullet_entity)
+                end
                 local bullet_w, bullet_h = 60, 85
                 set_position(bullet, slot.x - bullet_w / 2, slot.y - bullet_h / 2)
                 slot.occupied = true
@@ -579,10 +628,23 @@ function restore_shotgun_state()
                 else
                     play_animation(bullet, "full")
                 end
-                table.insert(all_bullets, bullet)
+                if not table_contains(all_bullets, bullet) then
+                    table.insert(all_bullets, bullet)
+                end
             end
+        else
+            set_shotgun_slot_state(i, "empty", slot)
         end
     end
+end
+
+function table_contains(tbl, value)
+    for _, item in ipairs(tbl) do
+        if item == value then
+            return true
+        end
+    end
+    return false
 end
 
 function load_shotgun_state()
@@ -590,9 +652,12 @@ function load_shotgun_state()
         return
     end
 
-    if GameState.shotgun_barrel == nil then
+    if GameState.shotgun_barrel == nil or type(GameState.shotgun_barrel) ~= "table" then
         GameState.shotgun_barrel = {"empty", "empty"}
     else
+        if #GameState.shotgun_barrel == 0 then
+            GameState.shotgun_barrel = {"empty", "empty"}
+        end
         for i = 1, ZONE_SLOTS do
             if GameState.shotgun_barrel[i] == nil then
                 GameState.shotgun_barrel[i] = "empty"

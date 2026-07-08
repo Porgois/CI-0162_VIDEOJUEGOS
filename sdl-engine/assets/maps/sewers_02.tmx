@@ -398,7 +398,7 @@
 </data>
  </layer>
  <imagelayer id="20" name="Player Layer Placeholder" offsetx="396.977" offsety="153">
-  <image source="../../sprites/aseprite files/characters/duck_sprite.png" width="30" height="30"/>
+  <image source="../../sprites/aseprite files/characters/duck_sprite.png"/>
  </imagelayer>
  <layer id="26" name="Filler Layer" width="70" height="40">
   <data encoding="csv">
@@ -642,7 +642,6 @@
   <object id="40" name="collider_1" x="353" y="247.25" width="78" height="11.5"/>
  </objectgroup>
  <objectgroup id="29" name="Objects">
-  <object id="46" name="e_revolver.lua" x="433.333" y="173.333"/>
   <object id="47" name="e_destructable_barrel_01.lua" x="319.75" y="165.5"/>
   <object id="50" name="e_sewers_03.lua" x="753.454" y="259.534">
    <point/>

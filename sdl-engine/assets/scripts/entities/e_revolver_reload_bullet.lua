@@ -11,7 +11,7 @@ return {
             }
         },
         script = {path = "./assets/scripts/uiScripts/scr_reload_bullet.lua"},
-        sprite    = {assetId = "reload_bullet", width = 48, height = 48, src_rect = {x = 0, y = 0}, z_index = 3000, pivot = {x = 0, y = 0}, flip = false, is_ui = true, is_unlit = true},
+        sprite    = {assetId = "reload_bullet", width = 48, height = 48, src_rect = {x = 0, y = 0}, z_index = 50, pivot = {x = 0, y = 0}, flip = false, is_ui = true, is_unlit = true},
         transform = {position = {x = 60.0, y = 170.0}, scale = {x = 2.0, y = 2.0}, rotation = 0.0}
     }
 }

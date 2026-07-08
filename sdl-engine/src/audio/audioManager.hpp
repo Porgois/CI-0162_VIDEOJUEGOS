@@ -11,10 +11,11 @@ class AudioManager {
         AudioManager();
         ~AudioManager();
 
-bool playSound(const std::string& file_path, int loops = 0, int volume = 128);
+        bool playSound(const std::string& file_path, int loops = 0, int volume = 128);
     bool playMusic(const std::string& file_path, int loops = -1, int volume = 128);
         bool playRandomSound(const std::vector<std::string>& file_paths, int loops = 0, int volume = 128);
         void stopMusic();
+        void stopAllSounds();
         void clearAssets();
 
     private:

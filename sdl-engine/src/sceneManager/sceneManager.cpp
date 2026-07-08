@@ -31,6 +31,7 @@ void SceneManager::loadScriptScenes(const std::string& path, sol::state& lua) {
 
         if (index == 0) {
             next_scene = scene["name"];
+            current_scene = scene["name"];
         }
         index++;
     }
@@ -38,6 +39,7 @@ void SceneManager::loadScriptScenes(const std::string& path, sol::state& lua) {
 
 void SceneManager::loadScene() {
     Game& game = Game::getInstance();
+    current_scene = next_scene;
     std::string scene_path = scenes[next_scene];
     scene_loader->loadScene(scene_path, game.lua, game.asset_manager, \
         game.controller_manager, game.registry, game.renderer);
@@ -47,6 +49,10 @@ void SceneManager::loadScene() {
 
 std::string SceneManager::getNextScene() const {
     return next_scene;
+}
+
+std::string SceneManager::getCurrentScene() const {
+    return current_scene;
 }
 
 void SceneManager::setNextScene(const std::string& next_scene) {

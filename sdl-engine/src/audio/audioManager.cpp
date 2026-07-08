@@ -105,6 +105,11 @@ void AudioManager::stopMusic() {
     Mix_HaltMusic();
 }
 
+void AudioManager::stopAllSounds() {
+    Mix_HaltChannel(-1);  // -1 halts all channels
+    Mix_HaltMusic();
+}
+
 void AudioManager::clearAssets() {
     stopMusic();
 

@@ -38,8 +38,16 @@ scene = {
         },
         { -- Game title
             components = {
-                text = {text = "Thanks for playing!", font_id = "pixel_sleigh_32", r = 255, g = 255, b = 255, a = 255, outline_thickness = 3},
-                transform = {position = {x = 20.0, y = 50.0}, scale = {x = 1.0, y = 1.0}, rotation = 0.0}
+                text = {text = "Thanks for playing!", font_id = "pixel_sleigh_32", r = 255, g = 255, b = 255, a = 255, outline_thickness = 3, is_ui = true},
+                transform = {position = {x = 170.0, y = 260.0}, scale = {x = 1.0, y = 1.0}, rotation = 0.0}
+            }
+        },
+        { -- Retry
+            components = {
+                clickable = {width = 140, height = 55, offset_x = 195, offset_y = 200},
+                script = {path = "./assets/scripts/menuScripts/retry_button.lua"},
+                text = {text = "Retry", font_id = "pixel_sleigh_24", r = 255, g = 255, b = 255, a = 255, outline_thickness = 3},
+                transform = {position = {x = 140.0, y = 140.0}, scale = {x = 1.0, y = 1.0}, rotation = 0.0}
             }
         }
     }

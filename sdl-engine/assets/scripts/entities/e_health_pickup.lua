@@ -1,7 +1,7 @@
 return {
     name = "health_pickup",
     components = {
-       animation = {
+        animation = {
             clips = {
                 glow = {row = 0, num_frames = 7, animation_speed = 8, loop = true}
             }

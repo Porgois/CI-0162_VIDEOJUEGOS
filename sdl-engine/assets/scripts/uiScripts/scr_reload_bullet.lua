@@ -75,9 +75,11 @@ function update()
     if is_held then
         if is_button_pressed("lmb") then
             local mx, my = get_mouse_position()
-            set_position(this, mx - 48, my - 48)
+            set_position(this, mx - 42, my - 52)
             play_animation(this, "grab")
+            set_sprite_z_index(this, 51)
         else
+            set_sprite_z_index(this, 50)
             is_held = false
             GameState.dropped_bullet = this
             GameState.drop_state = "pending"

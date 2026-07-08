@@ -159,6 +159,7 @@ void Game::setup() {
     lua["GameState"]["zones"] = lua.create_table();
     lua["GameState"]["dropped_bullet"] = sol::nil;
     lua["GameState"]["drop_state"] = "idle"; // states: "idle", "pending", "accepted", "rejected"
+    lua["GameState"]["last_scene_name"] = std::string("");
     lua["GameState"]["zone_config_queue"] = lua.create_table();
     lua["GameState"]["slotted_bullets"] = lua.create_table();
     lua["GameState"]["revolver_cylinder"] = lua.create_table();
@@ -218,14 +219,27 @@ static void callGameStateHook(sol::state& lua, const char* hook_name) {
 }
 
 void Game::loadRevolverState() {
+    sol::optional<sol::table> game_state = lua["GameState"];
+    if (game_state) {
+        if (scene_manager) {
+            game_state.value()["current_scene_name"] = scene_manager->getCurrentScene();
+        } else {
+            game_state.value()["current_scene_name"] = "default";
+        }
+    }
+
+    callGameStateHook(lua, "restore_scene_start_state");
     callGameStateHook(lua, "load_revolver_state");
     callGameStateHook(lua, "load_player_state");
+    callGameStateHook(lua, "load_player_inventory_state");
     callGameStateHook(lua, "load_revolver_player_state");
     callGameStateHook(lua, "load_shotgun_state");
     callGameStateHook(lua, "load_shotgun_player_state");
+    callGameStateHook(lua, "snapshot_scene_state");
 }
 
 void Game::saveRevolverState() {
+    callGameStateHook(lua, "save_player_inventory_state");
     callGameStateHook(lua, "save_player_state");
     callGameStateHook(lua, "save_revolver_state");
     callGameStateHook(lua, "save_revolver_player_state");
@@ -287,6 +301,11 @@ void Game::renderTransition() {
 
 // Processes all kinds of input
 void Game::processInput() {
+    // Block input during scene transitions
+    if (scene_transition_state != SceneTransitionState::None) {
+        return;
+    }
+
     SDL_Event sdl_event;
     controller_manager->updateInputStates();
 
@@ -419,6 +438,12 @@ void Game::render() {
 void Game::runScene() {
     scene_manager->loadScene();
     std::cout << "[SCENE] loadScene done" << std::endl;
+
+    sol::optional<sol::table> game_state = lua["GameState"];
+    if (game_state) {
+        game_state.value()["current_scene_name"] = scene_manager->getCurrentScene();
+    }
+
     registry->update();
     std::cout << "[SCENE] first registry->update() done" << std::endl;
     registry->getSystem<ScriptSystem>().start(lua);

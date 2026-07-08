@@ -1,11 +1,11 @@
 -- Projectile
 local projectile_entity = dofile("./assets/scripts/entities/e_projectile.lua")
 local projectile_speed = 350.0
+local local_projectile_damage = 0.25
 local can_shoot = true
 
 -- Spread
 local projectile_amount = 8
-local projectile_damage = 0.25
 local spread = 15.0
 local spread_jitter = 20.0
 
@@ -100,8 +100,9 @@ function shoot_projectile()
         return
     end
 
-    spawn_projectiles()
+    play_animation(this, "shoot")
     apply_pushback(get_aim_angle())
+    spawn_projectiles()
     play_audio("assets/soundEffects/weapons/shotgun/shotgun_shoot.wav", 0, 24)
     shake_camera(0.4, 8.0, 30.0)
 
@@ -128,19 +129,20 @@ function spawn_projectiles()
             angle = base_angle + offset
         end
 
-        -- add random jitter so pellets aren't perfectly uniform
+        -- Add random jitter so pellets aren't perfectly uniform
         if jitter_rad > 0.0 then
             angle = angle + (math.random() * 2.0 - 1.0) * jitter_rad
         end
 
-        -- Spawn position always uses base_angle (muzzle point); only the
-        -- velocity direction varies per pellet.
+        -- Spawn position always uses base_angle (muzzle point)
+        -- Only the velocity direction varies per pellet.
         spawn_single_projectile(x_pos, y_pos, base_angle, angle)
     end
 end
 
 function spawn_single_projectile(x_pos, y_pos, spawn_angle, velocity_angle)
     local projectile = spawn_entity(projectile_entity)
+    call_function(projectile, "set_damage_to_deal", local_projectile_damage)
 
     local spawn_x = x_pos + math.cos(spawn_angle) * barrel_offset_x
     local spawn_y = y_pos + math.sin(spawn_angle) * barrel_offset_x
@@ -185,6 +187,7 @@ function save_player_state()
         if GameState.player_shotgun_ammo == nil then
             GameState.player_shotgun_ammo = max_ammo
         end
+        GameState.player_shotgun_ammo = GameState.player_shotgun_ammo
         print("[SHOTGUN] save_player_state: GameState.player_shotgun_ammo=" .. tostring(GameState.player_shotgun_ammo))
     end
 end
@@ -201,8 +204,22 @@ function load_player_state()
 end
 
 if GameState ~= nil then
-    GameState.save_player_state = save_player_state
-    GameState.load_player_state = load_player_state
-    GameState.save_shotgun_player_state = save_player_state
-    GameState.load_shotgun_player_state = load_player_state
+    local previous_save_player_state = GameState.save_player_state
+    GameState.save_player_state = function()
+        if previous_save_player_state then
+            previous_save_player_state()
+        end
+        save_player_state()
+    end
+
+    local previous_load_player_state = GameState.load_player_state
+    GameState.load_player_state = function()
+        if previous_load_player_state then
+            previous_load_player_state()
+        end
+        load_player_state()
+    end
+
+    GameState.save_shotgun_player_state = GameState.save_player_state
+    GameState.load_shotgun_player_state = GameState.load_player_state
 end
