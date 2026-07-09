@@ -23,6 +23,7 @@
 #include "../components/tagComponent.hpp"
 #include "../components/tileMapComponent.hpp"
 #include "../components/layerComponent.hpp"
+#include "../components/dialogueComponent.hpp"
 
 SceneLoader::SceneLoader() {
     std::cout << "[SCENE LOADER] Executes constructor!" << std::endl;
@@ -58,6 +59,8 @@ void SceneLoader::loadScene(const std::string &scene_path,
 
     sol::table buttons = scene["buttons"];
     loadButtons(buttons, controller_manager);
+
+    controller_manager->addActionKey("restart_scene", SDLK_0);
 
     sol::table keys = scene["keys"];
     loadKeys(keys, controller_manager);
@@ -356,6 +359,15 @@ void SceneLoader::loadText(Entity &entity, const sol::table &components) {
             components["text"]["is_ui"].get_or(false)
         );
     }
+}
+
+void SceneLoader::loadDialogue(Entity &entity, const sol::table &components) {
+    sol::optional<sol::table> has_dialogue = components["dialogue"];
+    if (has_dialogue == sol::nullopt) {
+        return;
+    }
+
+    entity.addComponent<DialogueComponent>();
 }
 
 void SceneLoader::loadFonts(const sol::table &fonts,
@@ -687,6 +699,7 @@ void SceneLoader::loadObjects(std::unique_ptr<Registry> &registry, sol::state &l
 
         loadScript(lua, entity, components);
         loadText(entity, components);
+        loadDialogue(entity, components);
         loadClickable(entity, components);
         loadCursor(entity, components);
 
@@ -1084,6 +1097,7 @@ Entity SceneLoader::createEntity(sol::state &lua, const sol::table &entity, \
         loadMouseFollow(new_entity, components);
         loadTransform(new_entity, components);
         loadFlashlight(new_entity, components);
+        loadDialogue(new_entity, components);
         loadScript(lua, new_entity, components);
     }
 

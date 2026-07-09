@@ -51,6 +51,8 @@ class SceneLoader {
 
         static void loadText(Entity& entity, const sol::table& components);
 
+        static void loadDialogue(Entity& entity, const sol::table& components);
+
         static void loadClickable(Entity& entity, const sol::table& components);
 
         static void loadCameraFollow(Entity& entity, const sol::table& components);

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="150" height="75" tilewidth="16" tileheight="16" infinite="0" nextlayerid="5" nextobjectid="18">
+<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="150" height="75" tilewidth="16" tileheight="16" infinite="0" nextlayerid="5" nextobjectid="19">
  <tileset firstgid="1" source="sewers.tsx"/>
  <layer id="1" name="Base" width="150" height="75">
   <data encoding="csv">
@@ -88,12 +88,13 @@
  <objectgroup id="3" name="Objects">
   <object id="10" name="e_ammo_pickup.lua" x="1253.5" y="435.5"/>
   <object id="11" name="e_shell_pickup.lua" x="1346.5" y="437"/>
-  <object id="14" name="e_revolver_pickable.lua" x="1292.5" y="375"/>
+  <object id="14" name="e_revolver_pickable.lua" x="1506.17" y="400"/>
   <object id="15" name="e_shotgun_pickable.lua" x="1244" y="376"/>
   <object id="16" x="1368.5" y="620.5"/>
-  <object id="17" name="e_sewers_02.lua" x="1522" y="273">
+  <object id="17" name="e_portal.lua" x="1522" y="273">
    <point/>
   </object>
+  <object id="18" name="e_dead_npc.lua" x="1493.09" y="394.909"/>
  </objectgroup>
  <objectgroup id="4" name="Colliders">
   <object id="3" name="collider_1" x="1193.5" y="536" width="361" height="19.5"/>

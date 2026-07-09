@@ -9,6 +9,11 @@ local projectile_amount = 8
 local spread = 15.0
 local spread_jitter = 20.0
 
+-- Animation sync
+local projectile_spawn_delay = 0.12
+local pending_projectile_spawn = false
+local pending_projectile_spawn_timer = 0.0
+
 -- Pushback (recoil)
 local pushback_amount = 10.0
 local pushback_recovery_speed = 40.0
@@ -24,7 +29,8 @@ local shoot_cooldown = 1.0
 local cooldown_timer = 0.0
 
 -- Offset
-local barrel_offset_x = 6.0
+local barrel_offset_x = -2.0
+local muzzle_clearance = 6.0
 
 function start()
     if GameState then
@@ -84,6 +90,39 @@ function update_pushback_recovery()
     end
 end
 
+function spawn_projectiles_now()
+    local angle = get_aim_angle()
+    local x_pos, y_pos = get_pivoted_position(this)
+    local spawn_x = x_pos + math.cos(angle) * (barrel_offset_x + muzzle_clearance)
+    local spawn_y = y_pos + math.sin(angle) * (barrel_offset_x + muzzle_clearance)
+
+    local count = math.max(1, math.floor(projectile_amount))
+    local spread_rad = math.rad(spread)
+    local jitter_rad = math.rad(spread_jitter)
+
+    for i = 1, count do
+        local projectile_angle
+        if count == 1 then
+            projectile_angle = angle
+        else
+            local t = (i - 1) / (count - 1)
+            local offset = -spread_rad / 2 + t * spread_rad
+            projectile_angle = angle + offset
+        end
+
+        if jitter_rad > 0.0 then
+            projectile_angle = projectile_angle + (math.random() * 2.0 - 1.0) * jitter_rad
+        end
+
+        local projectile = spawn_entity(projectile_entity)
+        call_function(projectile, "set_damage_to_deal", local_projectile_damage)
+
+        set_position(projectile, spawn_x, spawn_y)
+        set_rotation(projectile, math.deg(projectile_angle))
+        set_velocity(projectile, math.cos(projectile_angle) * projectile_speed, math.sin(projectile_angle) * projectile_speed)
+    end
+end
+
 function shoot_projectile()
     if not can_shoot then
         print("[SHOTGUN] On cooldown!")
@@ -101,8 +140,11 @@ function shoot_projectile()
     end
 
     play_animation(this, "shoot")
+
+    pending_projectile_spawn = true
+    pending_projectile_spawn_timer = projectile_spawn_delay
+
     apply_pushback(get_aim_angle())
-    spawn_projectiles()
     play_audio("assets/soundEffects/weapons/shotgun/shotgun_shoot.wav", 0, 24)
     shake_camera(0.4, 8.0, 30.0)
 
@@ -153,6 +195,14 @@ function spawn_single_projectile(x_pos, y_pos, spawn_angle, velocity_angle)
 end
 
 function update()
+    if pending_projectile_spawn then
+        pending_projectile_spawn_timer = pending_projectile_spawn_timer - get_delta_time()
+        if pending_projectile_spawn_timer <= 0.0 then
+            pending_projectile_spawn = false
+            spawn_projectiles_now()
+        end
+    end
+
     if GameState and GameState.set_shotgun_reload_menu and is_button_just_pressed("rmb") then
         local opening = not GameState.shotgun_reload_menu_open
         GameState.set_shotgun_reload_menu(opening)

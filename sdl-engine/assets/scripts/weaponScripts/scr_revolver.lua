@@ -4,6 +4,11 @@ local projectile_speed = 350.0
 local local_projectile_damage = 1.0
 local can_shoot = true
 
+-- Animation sync
+local projectile_spawn_delay = 0.12
+local pending_projectile_spawn = false
+local pending_projectile_spawn_timer = 0.0
+
 -- Ammo
 local max_ammo = 6
 
@@ -12,7 +17,8 @@ local shoot_cooldown = 0.25
 local cooldown_timer = 0.0
 
 -- Offset
-local barrel_offset_x = 6.0
+local barrel_offset_x = -2.0
+local muzzle_clearance = 6.0
 
 -- Pushback (recoil)
 local pushback_amount = 4.0
@@ -80,6 +86,20 @@ function update_pushback_recovery()
     end
 end
 
+function spawn_projectile_now()
+    local angle = get_aim_angle()
+    local x_pos, y_pos = get_pivoted_position(this)
+    local spawn_x = x_pos + math.cos(angle) * (barrel_offset_x + muzzle_clearance)
+    local spawn_y = y_pos + math.sin(angle) * (barrel_offset_x + muzzle_clearance)
+
+    local projectile = spawn_entity(projectile_entity)
+    call_function(projectile, "set_damage_to_deal", local_projectile_damage)
+
+    set_position(projectile, spawn_x, spawn_y)
+    set_rotation(projectile, math.deg(angle))
+    set_velocity(projectile, math.cos(angle) * projectile_speed, math.sin(angle) * projectile_speed)
+end
+
 function shoot_projectile()
     if not can_shoot then
         print("[REVOLVER] On cooldown!")
@@ -97,18 +117,9 @@ function shoot_projectile()
     end
 
     play_animation(this, "shoot")
-    local projectile = spawn_entity(projectile_entity)
-    call_function(projectile, "set_damage_to_deal", local_projectile_damage)
 
-    local x_pos, y_pos = get_pivoted_position(this)
-    local angle = get_aim_angle()
-
-    local spawn_x = x_pos + math.cos(angle) * barrel_offset_x
-    local spawn_y = y_pos + math.sin(angle) * barrel_offset_x
-
-    set_position(projectile, spawn_x, spawn_y)
-    set_rotation(projectile, math.deg(angle))
-    set_velocity(projectile, math.cos(angle) * projectile_speed, math.sin(angle) * projectile_speed)
+    pending_projectile_spawn = true
+    pending_projectile_spawn_timer = projectile_spawn_delay
 
     apply_pushback(get_aim_angle())
     play_audio("assets/soundEffects/weapons/shoot/shoot.wav", 0, 24)
@@ -132,6 +143,14 @@ function update()
         end
 
         return
+    end
+
+    if pending_projectile_spawn then
+        pending_projectile_spawn_timer = pending_projectile_spawn_timer - get_delta_time()
+        if pending_projectile_spawn_timer <= 0.0 then
+            pending_projectile_spawn = false
+            spawn_projectile_now()
+        end
     end
 
     if not can_shoot then

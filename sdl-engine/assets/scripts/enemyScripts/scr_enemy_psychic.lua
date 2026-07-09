@@ -1,6 +1,7 @@
 -- PSYCHIC ---
 
 local ammo_pickup_entity = dofile("./assets/scripts/entities/e_ammo_pickup.lua")
+local shell_pickup_entity = dofile("./assets/scripts/entities/e_shell_pickup.lua")
 local health_pickup_entity = dofile("./assets/scripts/entities/e_health_pickup.lua")
 
 -- General
@@ -10,6 +11,11 @@ local detection_range = 140
 local flee_range = 30
 local has_been_hit = false
 local has_detected_player = false
+
+-- Smart drop system thresholds
+local health_threshold = 2
+local ammo_threshold = 2
+local drop_chance = 1.0
 
 -- Psychic attack
 local psychic_range = 140
@@ -43,8 +49,6 @@ local damage_anim_duration = 0.25
 local alert_finished = false
 
 -- Drops
-local drop_chance = 1.0
-local ammo_chance = 0.2
 local on_death_triggered = false
 
 -- Footsteps
@@ -179,14 +183,37 @@ function flee_from_player()
     flip_towards(-dx)
 end
 
+function get_best_drop()
+    -- Hierarchy: health > revolver_ammo > shotgun_ammo
+    -- Returns which resource type is most needed
+    
+    local health = GameState.player_health or 100
+    local revolver_ammo = GameState.player_ammo or 0
+    local shotgun_ammo = GameState.player_shotgun_ammo or 0
+    
+    if health <= health_threshold then
+        return "health"
+    elseif revolver_ammo <= ammo_threshold then
+        return "revolver_ammo"
+    else
+        return "shotgun_ammo"
+    end
+end
+
 function random_drop()
     if math.random() > drop_chance then return end
+    
+    local drop_type = get_best_drop()
     local picked_entity
-    if math.random() <= ammo_chance then
-        picked_entity = spawn_entity(ammo_pickup_entity)
-    else
+    
+    if drop_type == "health" then
         picked_entity = spawn_entity(health_pickup_entity)
+    elseif drop_type == "revolver_ammo" then
+        picked_entity = spawn_entity(ammo_pickup_entity)
+    else  -- shotgun_ammo
+        picked_entity = spawn_entity(shell_pickup_entity)
     end
+    
     local x, y = get_position(this)
     set_position(picked_entity, x + 10, y + 25)
 end

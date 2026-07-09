@@ -9,7 +9,7 @@ return {
             }
         },
         script        = {path = "./assets/scripts/miscScripts/scr_destructable.lua"},
-        box_collider  = {width = 8, height = 12, offset = {x = 8, y = 5.5}},
+        box_collider  = {width = 10, height = 12, offset = {x = 7, y = 5.5}},
         rigidbody     = {is_dynamic = false, is_solid = true, mass = 100.0},
         sprite        = {assetId = "destructable_metal_barrel", width = 24, height = 24, src_rect = {x = 0, y = 0}, z_index = 9, pivot = {x = 0, y = 0}, flip = false},
         tag           = {tag = "t_destructable"},

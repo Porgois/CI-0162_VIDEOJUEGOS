@@ -5,12 +5,14 @@
 #include <memory>
 #include <sol/sol.hpp>
 #include <string>
+#include <vector>
 
 #include "./sceneLoader.hpp"
 
 class SceneManager {
     private:
         std::map<std::string, std::string> scenes;
+        std::vector<std::string> scene_order;
         std::unique_ptr<SceneLoader> scene_loader;
         std::string next_scene;
         std::string current_scene;
@@ -25,6 +27,7 @@ class SceneManager {
 
         std::string getNextScene() const;
         std::string getCurrentScene() const;
+        std::string getNextSceneInList() const;
         void setNextScene(const std::string& next_scene);
 
         bool isRunning() const;

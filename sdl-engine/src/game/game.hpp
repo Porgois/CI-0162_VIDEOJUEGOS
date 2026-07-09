@@ -83,7 +83,7 @@ class Game {
         void run();
         void destroy();
         void requestSceneTransition();
+        void quit();
 };
-
 
 #endif // GAME_HPP

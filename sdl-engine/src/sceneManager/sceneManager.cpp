@@ -27,7 +27,9 @@ void SceneManager::loadScriptScenes(const std::string& path, sol::state& lua) {
         }
 
         sol::table scene = scenes[index];
-        this->scenes.emplace(scene["name"], scene["path"]);
+        std::string scene_name = scene["name"];
+        this->scenes.emplace(scene_name, scene["path"]);
+        this->scene_order.push_back(scene_name);
 
         if (index == 0) {
             next_scene = scene["name"];
@@ -53,6 +55,20 @@ std::string SceneManager::getNextScene() const {
 
 std::string SceneManager::getCurrentScene() const {
     return current_scene;
+}
+
+std::string SceneManager::getNextSceneInList() const {
+    if (current_scene.empty()) {
+        return "";
+    }
+
+    for (size_t i = 0; i < scene_order.size(); ++i) {
+        if (scene_order[i] == current_scene && i + 1 < scene_order.size()) {
+            return scene_order[i + 1];
+        }
+    }
+
+    return "";
 }
 
 void SceneManager::setNextScene(const std::string& next_scene) {

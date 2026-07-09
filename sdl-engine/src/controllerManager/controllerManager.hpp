@@ -44,6 +44,7 @@ class ControllerManager {
         void updateMouseButtonStates();
         void updateKeyStates();
         void updateInputStates();
+        void resetCurrentInputState();
 
         void setMousePosition(int x, int y);
         std::tuple<int, int> getMousePosition();

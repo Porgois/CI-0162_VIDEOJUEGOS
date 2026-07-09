@@ -61,6 +61,13 @@ function on_click()
 end
 
 function update()
+    -- Check if reload menu is still open; if not, delete the ejecting bullet
+    local menu_is_open = GameState and (GameState.revolver_reload_menu_open or GameState.shotgun_reload_menu_open)
+    if is_ejecting and not menu_is_open then
+        delete_entity(this)
+        return
+    end
+
     if is_ejecting then
         local x, y = get_position(this)
         local new_y = y + eject_speed

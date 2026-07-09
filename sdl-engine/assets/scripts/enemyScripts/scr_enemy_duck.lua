@@ -2,6 +2,7 @@
 
 -- Possible entity spawns
 local ammo_pickup_entity = dofile("./assets/scripts/entities/e_ammo_pickup.lua")
+local shell_pickup_entity = dofile("./assets/scripts/entities/e_shell_pickup.lua")
 local health_pickup_entity = dofile("./assets/scripts/entities/e_health_pickup.lua")
 
 -- General values
@@ -33,9 +34,12 @@ local patrol_move_timeout = 0
 local timeout_buffer = 1.5
 
 -- Drop chance
-local drop_chance = 1.0         -- 75% chance to drop anything
-local ammo_chance = 0.2        -- 20% chance for ammo, 80% for health
+local drop_chance = 1.0         -- Chance to drop something
 local on_death_triggered = false
+
+-- Smart drop system thresholds
+local health_threshold = 2
+local ammo_threshold = 2
 
 -- Footsteps
 local footstep_timer = 0
@@ -256,20 +260,44 @@ function attack()
     end
 end
 
+function get_best_drop()
+    -- Hierarchy: health > revolver_ammo > shotgun_ammo
+    -- Returns which resource type is most needed
+    
+    local health = GameState.player_health or 100
+    local revolver_ammo = GameState.player_ammo or 0
+    local shotgun_ammo = GameState.player_shotgun_ammo or 0
+    
+    if health <= health_threshold then
+        return "health"
+    elseif revolver_ammo <= ammo_threshold then
+        return "revolver_ammo"
+    else
+        return "shotgun_ammo"
+    end
+end
+
 function random_drop()
     print("[ENEMY SCRIPT] ROLLED FOR DROP!")
     if math.random() > drop_chance then
         print("[ENEMY SCRIPT] NO DROP!")
         return
     end
+
+    local drop_type = get_best_drop()
     local picked_entity
-    if math.random() <= ammo_chance then
-        print("[ENEMY SCRIPT] DROPPED AMMO!")
-        picked_entity = spawn_entity(ammo_pickup_entity)
-    else
+    
+    if drop_type == "health" then
         print("[ENEMY SCRIPT] DROPPED HEALTH!")
         picked_entity = spawn_entity(health_pickup_entity)
+    elseif drop_type == "revolver_ammo" then
+        print("[ENEMY SCRIPT] DROPPED REVOLVER AMMO!")
+        picked_entity = spawn_entity(ammo_pickup_entity)
+    else  -- shotgun_ammo
+        print("[ENEMY SCRIPT] DROPPED SHOTGUN AMMO!")
+        picked_entity = spawn_entity(shell_pickup_entity)
     end
+
     local x_pos, y_pos = get_position(this)
     x_pos = x_pos + 10
     y_pos = y_pos + 25

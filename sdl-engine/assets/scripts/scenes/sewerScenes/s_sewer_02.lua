@@ -6,7 +6,7 @@ scene = {
     keys    = (function() local t = dofile("./assets/scripts/misc/keys.lua");    return t end)(),
     buttons = (function() local t = dofile("./assets/scripts/misc/buttons.lua"); return t end)(),
     maps = {
-        map_path  = "./assets/maps/sewers_02.tmx",
+        map_path  = "./assets/maps/level_01.tmx",
         tile_path = "./assets/maps/sewers.tsx",
         tile_name = "terrain_sewers"
     },

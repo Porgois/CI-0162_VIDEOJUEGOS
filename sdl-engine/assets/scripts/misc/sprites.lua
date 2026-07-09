@@ -2,6 +2,8 @@ return {
     [0] =
         {asset_id = "cursor",          file_path = "./assets/ui/cursors/cursor.png"},
         {asset_id = "player",          file_path = "./assets/sprites/characters/player/player_sprite_sheet.png"},
+        {asset_id = "light",          file_path = "./assets/sprites/misc/light_sprite.png"},
+        {asset_id = "dead_npc",          file_path = "./assets/sprites/characters/dead_npc.png"},
         {asset_id = "destructable_metal_barrel",  file_path = "./assets/sprites/environment/metal_barrel_sprite_sheet.png"},
         {asset_id = "enemy_duck",          file_path = "./assets/sprites/characters/enemies/enemy_duck_sprite_sheet.png"},
         {asset_id = "enemy_psychic",          file_path = "./assets/sprites/characters/enemies/enemy_psychic_sprite_sheet.png"},
@@ -23,5 +25,9 @@ return {
         {asset_id = "flashlight_cone", file_path = "./assets/sprites/masks/cone.png"},
         {asset_id = "flashlight_source", file_path = "./assets/sprites/masks/circle.png"},
         {asset_id = "gate", file_path = "./assets/sprites/misc/gate_sprite_sheet.png"},
-        {asset_id = "valve", file_path = "./assets/sprites/misc/valve_sprite_sheet.png"}
+        {asset_id = "valve", file_path = "./assets/sprites/misc/valve_sprite_sheet.png"},
+        {asset_id = "controls_keys", file_path = "./assets/sprites/ui/controls_keys.png"},
+        {asset_id = "controls_mouse", file_path = "./assets/sprites/ui/controls_mouse.png"},
+        {asset_id = "controls_space", file_path = "./assets/sprites/ui/controls_space.png"},
+        {asset_id = "dialogue_advance", file_path = "./assets/sprites/ui/dialogue_advance_sprite_sheet.png"}
 }

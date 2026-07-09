@@ -113,7 +113,13 @@ class FlashlightRenderSystem : public System {
                 float dist = sqrtf((mouse_x - cx) * (mouse_x - cx) + (mouse_y - cy) * (mouse_y - cy));
                 float clamped_dist = std::min(dist, flashlight.max_distance);
                 float t = std::clamp(clamped_dist / (flashlight.reach * zoom_level), 0.0f, 1.0f);
+
+                float near_threshold = std::max(8.0f, flashlight.source_radius * zoom_level * 0.75f);
                 float distance_scale = flashlight.min_scale + t * (flashlight.max_scale - flashlight.min_scale);
+                if (clamped_dist <= near_threshold) {
+                    distance_scale = 0.0f;
+                }
+
                 float final_scale = distance_scale * flashlight.flicker_intensity;
 
                 float angle = angleToMouse(cx, cy, mouse_x, mouse_y);
@@ -132,6 +138,10 @@ class FlashlightRenderSystem : public System {
                 }
 
                 if (flashlight.mode == FlashlightMode::Full || flashlight.mode == FlashlightMode::ConeOnly) {
+                    if (final_scale <= 0.0f) {
+                        continue;
+                    }
+
                     float width_scale = std::min(final_scale, flashlight.max_width);
                     float height_scale = std::min(final_scale, flashlight.max_length);
                     SDL_Point cone_origin = {

@@ -854,11 +854,10 @@
   <object id="29" name="e_destructable_barrel_01.lua" x="717.417" y="288.667"/>
   <object id="34" name="e_destructable_barrel_01.lua" x="716.78" y="321.402"/>
   <object id="40" name="e_ammo_pickup.lua" x="1000" y="339.5"/>
-  <object id="41" name="e_revolver.lua" x="1205.5" y="306"/>
   <object id="42" name="e_gate.lua" x="1200" y="264.75">
    <point/>
   </object>
-  <object id="43" name="e_sewers_02.lua" x="741" y="423.5">
+  <object id="43" name="e_portal.lua" x="741" y="423.5">
    <point/>
   </object>
  </objectgroup>

@@ -6,6 +6,8 @@
 #include <vector>
 
 #include "../components/scriptComponent.hpp"
+#include "../components/dialogueComponent.hpp"
+#include "../systems/dialogueSystem.hpp"
 #include "../binding/luaBinding.hpp"
 #include "../e.c.s./ecs.hpp"
 
@@ -146,6 +148,21 @@ public:
         lua.set_function("set_rotation", setRotation);
         lua.set_function("set_child_of_offset", setChildOfOffset);
         lua.set_function("set_text", setTextText);
+        lua.set_function("start_dialogue", [](Entity entity, const sol::table& lines, const std::string& sound_effect_path, int volume, float typing_speed, sol::optional<int> wrap_at_chars) {
+            std::vector<std::string> dialogue_lines;
+            for (auto& item : lines) {
+                dialogue_lines.push_back(item.second.as<std::string>());
+            }
+            if (Game::getInstance().registry) {
+                int wrap = wrap_at_chars.value_or(0);
+                Game::getInstance().registry->getSystem<DialogueSystem>().startDialogue(entity, dialogue_lines, sound_effect_path, volume, typing_speed, wrap);
+            }
+        });
+        lua.set_function("advance_dialogue", [](Entity entity) {
+            if (Game::getInstance().registry) {
+                Game::getInstance().registry->getSystem<DialogueSystem>().advanceDialogue(entity);
+            }
+        });
         lua.set_function("set_flip", [&registry](Entity entity, bool flipped) {
             auto& sprite = entity.getComponent<SpriteComponent>();
             sprite.flip_to_mouse = false; // disable mouse control
@@ -245,6 +262,15 @@ public:
             [](const std::string& scene_name, bool fade) { goToScene(scene_name, fade, -1.0f); },
             [](const std::string& scene_name, bool fade, float hold_duration) { goToScene(scene_name, fade, hold_duration); }
         ));
+        lua.set_function("quit_game", [&game = Game::getInstance()]() {
+            game.quit();
+        });
+        lua.set_function("get_next_scene_in_list", [&game = Game::getInstance()]() -> std::string {
+            if (!game.scene_manager) {
+                return "";
+            }
+            return game.scene_manager->getNextSceneInList();
+        });
 
         // Entity creation & deletion
         lua.set_function("spawn_entity", [&lua, &registry, &named_entities](const sol::table& entity_def) -> Entity {

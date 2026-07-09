@@ -1,4 +1,4 @@
-local player_velocity = 60
+local player_velocity = 55
 local max_health = 3
 local current_health = 3
 local follow = true
@@ -145,7 +145,7 @@ function die()
     end
     set_current_weapon_state_name("")
     delete_back_weapon()
-    go_to_scene("s_died")
+    go_to_scene("died")
 end
 
 function transition_to(new_state)
@@ -187,7 +187,7 @@ function set_focus(focus)
     end
 
     if current_back_weapon then
-        toggle_sprite_flip(current_back_weapon, false)
+        toggle_sprite_flip(current_back_weapon, focus)
     end
 
     toggle_flashlight(this, focus)
@@ -710,6 +710,13 @@ function restore_scene_start_state()
 
     local snapshot = GameState.scene_state_snapshots[scene_key]
     if snapshot == nil then
+        -- First time entering this scene: restore persisted health before creating snapshot
+        if GameState.player_health ~= nil then
+            current_health = tonumber(GameState.player_health) or current_health
+        end
+        if GameState.player_max_health ~= nil then
+            max_health = tonumber(GameState.player_max_health) or max_health
+        end
         snapshot_scene_state()
         return
     end
@@ -803,7 +810,12 @@ function on_collision(other)
 
     if tag == "t_ammo_pickup" or tag == "t_shell_pickup" then -- AMMO
         if GameState then
-            local ammo_amount = get_script_variable(other, "default_revolver_ammo") or 2
+            local ammo_amount = nil
+            if tag == "t_shell_pickup" then
+                ammo_amount = get_script_variable(other, "default_shells") or 2
+            else
+                ammo_amount = get_script_variable(other, "default_revolver_ammo") or 2
+            end
             add_weapon_ammo(other, ammo_amount)
         end
 
@@ -847,6 +859,20 @@ function handle_footsteps()
     end
 end
 
+local function restart_current_scene()
+    local target_scene = ""
+
+    if GameState then
+        target_scene = GameState.current_scene_name or GameState.last_scene_name or ""
+    end
+
+    if target_scene and target_scene ~= "" then
+        go_to_scene(target_scene, true)
+    else
+        go_to_scene("sewers_01", true)
+    end
+end
+
 function update()
     if not (GameState and GameState.reload_menu_open) then
         if flashlight_disabled then
@@ -857,6 +883,11 @@ function update()
             end
         else
             set_focus(true)
+        end
+
+        if is_action_just_pressed("restart_scene") then
+            restart_current_scene()
+            return
         end
 
         if is_action_just_pressed("space") then

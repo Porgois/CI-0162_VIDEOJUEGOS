@@ -22,6 +22,7 @@
 #include "../systems/mouseFollowSystem.hpp"
 #include "../systems/uISystem.hpp"
 #include "../systems/cameraMovementSystem.hpp"
+#include "../systems/dialogueSystem.hpp"
 
 // Constructor
 Game::Game() {
@@ -77,7 +78,7 @@ void Game::init() {
 
     // Create the game window
     window = SDL_CreateWindow(
-        "2D Game Engine",
+        "WARPED GRACE",
         SDL_WINDOWPOS_CENTERED, // X appear pos
         SDL_WINDOWPOS_CENTERED, // Y appear pos
         window_width,
@@ -88,6 +89,14 @@ void Game::init() {
     if (!window) {
         std::cerr << "[GAME] Could not create the game *window*!" << std::endl;
         return;
+    }
+
+    SDL_Surface* icon_surface = IMG_Load("/home/Morgois/Documents/curso-videojuegos/CI-0162_VIDEOJUEGOS/sdl-engine/assets/sprites/misc/game_icon.png");
+    if (icon_surface) {
+        SDL_SetWindowIcon(window, icon_surface);
+        SDL_FreeSurface(icon_surface);
+    } else {
+        std::cerr << "[GAME] Could not load window icon: " << IMG_GetError() << std::endl;
     }
 
     // Create renderer (ver https://wiki.libsdl.org/SDL2/SDL_Renderer)
@@ -141,6 +150,7 @@ void Game::setup() {
     registry->addSystem<AnimationSystem>();
     registry->addSystem<CameraMovementSystem>();
     registry->addSystem<MouseFollowSystem>();
+    registry->addSystem<DialogueSystem>();
 
     registry->addSystem<FlipSystem>();
     registry->addSystem<TextRenderSystem>();
@@ -218,6 +228,24 @@ static void callGameStateHook(sol::state& lua, const char* hook_name) {
     }
 }
 
+static void callSceneHook(sol::state& lua, const char* hook_name) {
+    sol::optional<sol::table> scene = lua["scene"];
+    if (!scene) {
+        return;
+    }
+
+    sol::optional<sol::function> hook = scene.value()[hook_name];
+    if (!hook) {
+        return;
+    }
+
+    sol::protected_function_result result = hook.value()();
+    if (!result.valid()) {
+        sol::error err = result;
+        std::cerr << "[GAME] Failed to call scene." << hook_name << "(): " << err.what() << std::endl;
+    }
+}
+
 void Game::loadRevolverState() {
     sol::optional<sol::table> game_state = lua["GameState"];
     if (game_state) {
@@ -251,6 +279,16 @@ void Game::requestSceneTransition() {
     if (scene_transition_state == SceneTransitionState::None) {
         scene_transition_state = SceneTransitionState::FadeOut;
         scene_transition_alpha = 0.0f;
+        if (controller_manager) {
+            controller_manager->resetCurrentInputState();
+        }
+    }
+}
+
+void Game::quit() {
+    is_running = false;
+    if (scene_manager) {
+        scene_manager->stopScene();
     }
 }
 
@@ -301,29 +339,39 @@ void Game::renderTransition() {
 
 // Processes all kinds of input
 void Game::processInput() {
-    // Block input during scene transitions
-    if (scene_transition_state != SceneTransitionState::None) {
-        return;
-    }
-
     SDL_Event sdl_event;
     controller_manager->updateInputStates();
 
     while (SDL_PollEvent(&sdl_event)) {
-        switch (sdl_event.type) {
-            case SDL_QUIT: // "X" window button press
-                is_running = false;
-                scene_manager->stopScene();
-                break;
+        if (sdl_event.type == SDL_QUIT) {
+            is_running = false;
+            scene_manager->stopScene();
+            continue;
+        }
 
-            case SDL_KEYDOWN:
-
-                if (sdl_event.key.keysym.sym == SDLK_ESCAPE) {
-                    is_running = false;
-                    scene_manager->stopScene(); // TODO: Consider changing this for a main menu scene
+        if (scene_transition_state != SceneTransitionState::None) {
+            switch (sdl_event.type) {
+                case SDL_KEYUP:
+                    controller_manager->keyUp(sdl_event.key.keysym.sym);
                     break;
-                }
+                case SDL_MOUSEMOTION: {
+                    int x, y;
+                    SDL_GetMouseState(&x, &y);
+                    controller_manager->setMousePosition(x, y);
+                } break;
+                case SDL_MOUSEBUTTONUP:
+                    controller_manager->setMousePosition(sdl_event.button.x, sdl_event.button.y);
+                    controller_manager->mouseButtonUp(static_cast<int>(sdl_event.button.button));
+                    break;
+                default:
+                    break;
+            }
+            continue;
+        }
 
+        switch (sdl_event.type) {
+            case SDL_KEYDOWN:
+    
                 if (sdl_event.key.keysym.sym == SDLK_BACKQUOTE) {
                     is_debug_mode = !is_debug_mode;
                     break;
@@ -336,11 +384,11 @@ void Game::processInput() {
                 controller_manager->keyUp(sdl_event.key.keysym.sym);
                 break;
 
-            case SDL_MOUSEMOTION:
+            case SDL_MOUSEMOTION: {
                 int x, y;
                 SDL_GetMouseState(&x, &y);
-                controller_manager->setMousePosition(x, y); // store in controller manager
-                break;
+                controller_manager->setMousePosition(x, y);
+            } break;
             
             case SDL_MOUSEBUTTONDOWN:
                 controller_manager->setMousePosition(sdl_event.button.x, sdl_event.button.y);
@@ -381,6 +429,7 @@ void Game::update() {
     event_manager->reset();
     registry->getSystem<OverlapSystem>().subscribeCollisionEvent(event_manager);
     registry->getSystem<UISystem>().subscribeClickEvent(event_manager, lua);
+    registry->getSystem<DialogueSystem>().subscribeClickEvent(event_manager);
     registry->update();
     registry->getSystem<ScriptSystem>().update(lua);
     registry->update();
@@ -388,6 +437,7 @@ void Game::update() {
     
     registry->getSystem<FlipSystem>().update(camera, zoom_level);
     registry->getSystem<AnimationSystem>().update();
+    registry->getSystem<DialogueSystem>().update(delta_time);
     registry->getSystem<PhysicsSystem>().update();
     registry->getSystem<MovementSystem>().update(delta_time);
     registry->getSystem<ChildOfSystem>().update();
@@ -448,6 +498,7 @@ void Game::runScene() {
     std::cout << "[SCENE] first registry->update() done" << std::endl;
     registry->getSystem<ScriptSystem>().start(lua);
     std::cout << "[SCENE] ScriptSystem::start() done" << std::endl;
+    callSceneHook(lua, "start");
     loadRevolverState();
     scene_manager->startScene();
 

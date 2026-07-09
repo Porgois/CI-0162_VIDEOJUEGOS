@@ -144,6 +144,21 @@ void ControllerManager::updateInputStates() {
     updateMouseButtonStates();
 }
 
+void ControllerManager::resetCurrentInputState() {
+    for (auto& [key, value] : key_down) {
+        value = false;
+    }
+    for (auto& [key, value] : key_was_down) {
+        value = false;
+    }
+    for (auto& [button, value] : mouse_button_down) {
+        value = false;
+    }
+    for (auto& [button, value] : mouse_button_was_down) {
+        value = false;
+    }
+}
+
 void ControllerManager::setMousePosition(int x, int y) {
     mouse_pos_x = x;
     mouse_pos_y = y;

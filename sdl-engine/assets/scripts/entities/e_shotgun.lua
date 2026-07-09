@@ -3,7 +3,7 @@ return {
     components = {
         animation = {
             clips = {
-                shoot = {row = 0, num_frames = 3, animation_speed = 18, loop = false}
+                shoot = {row = 0, num_frames = 3, animation_speed = 24, loop = false}
             }
         },
         script       = {path = "./assets/scripts/weaponScripts/scr_shotgun.lua"},
